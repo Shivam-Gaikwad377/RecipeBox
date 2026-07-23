@@ -19,9 +19,35 @@ const userSchema = new Schema(
       unique: true,
       sparse: true,
     },
-    passwordHash: { type: String, select: false },
-    avatarUrl: { type: String, required: true },
-    bio: { type: String, default: "" },
+    passwordHash: {
+       type: String, 
+       select: false 
+      },
+    avatarUrl: { 
+      type: String,  
+    },
+    bio: { 
+      type: String, 
+      default: "" 
+    },
+      isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
+      select: false,
+    },
+    pendingEmail: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    ExpiresAt: {
+      type: Date,
+      default: () => new Date(Date.now() + 10 * 60 * 1000), // Default to 10 minutes from now
+    },
   },
   { timestamps: true }
 );
