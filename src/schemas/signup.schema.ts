@@ -5,7 +5,7 @@ export const signUpSchema = z.object({
   username: z
     .string()
     .min(3)
-    .regex(/^[a-z]{3,16}$/, "Use letters numbers and symbols only."),
+    .regex(/^(?![_-])[a-z0-9_-]{3,16}(?<![_-])$/, "Use letters numbers and symbols only."),
   email: z.email(),
   password: z.string().min(8),
   bio: z.string().max(240).optional()
