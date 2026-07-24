@@ -8,7 +8,6 @@ export const registerSchema = z.object({
     .regex(/^[a-z0-9-]+$/i, "Use letters, numbers, and hyphens only."),
   email: z.string().email(),
   password: z.string().min(8),
-  avatarUrl: z.string().url().optional().or(z.literal("")),
   bio: z.string().max(240).optional()
 });
 
