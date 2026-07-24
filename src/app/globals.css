@@ -21,8 +21,7 @@
   --spacing-margin-mobile: 20px;
 
   /* Fonts */
-  --font-playfair: "Playfair Display", serif;
-  --font-inter: "Inter", sans-serif;
+  --font-jakarta: "Plus Jakarta Sans", sans-serif;
 
   /* Typography */
   --text-display-lg: 48px;
@@ -175,7 +174,7 @@
 
 /* All toasts base */
 [data-sonner-toast] {
-  font-family: var(--font-inter) !important;
+  font-family: var(--font-jakarta) !important;
   border-radius: var(--radius-DEFAULT) !important;
 }
 
@@ -234,7 +233,7 @@ input[type="password"]::-webkit-contacts-auto-fill-button {
 }
 
 body {
-  @apply bg-background text-on-surface text-body-md font-inter antialiased;
+  @apply bg-background text-on-surface text-body-md font-jakarta antialiased;
 }
 
 /* Display and Headline overrides */
@@ -242,7 +241,7 @@ h1,
 h2,
 h3,
 .font-display {
-  @apply font-playfair;
+  @apply font-jakarta;
 }
 
 ::selection {
@@ -277,16 +276,16 @@ h3,
 
   /* Buttons */
   .btn-primary {
-    @apply inline-flex items-center justify-center bg-primary text-on-primary font-inter font-semibold rounded-full px-6 py-3 hover:bg-primary-container transition-colors;
+    @apply inline-flex items-center justify-center bg-primary text-on-primary font-jakarta font-semibold rounded-full px-6 py-3 hover:bg-primary-container transition-colors;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center border-2 border-primary text-primary font-inter font-semibold rounded-full px-6 py-3 hover:bg-primary/5 transition-colors;
+    @apply inline-flex items-center justify-center border-2 border-primary text-primary font-jakarta font-semibold rounded-full px-6 py-3 hover:bg-primary/5 transition-colors;
   }
   .btn-fresh {
-    @apply inline-flex items-center justify-center bg-secondary text-on-secondary font-inter font-semibold rounded-full px-6 py-3 hover:bg-secondary/90 transition-colors;
+    @apply inline-flex items-center justify-center bg-secondary text-on-secondary font-jakarta font-semibold rounded-full px-6 py-3 hover:bg-secondary/90 transition-colors;
   }
   .btn-tertiary {
-    @apply inline-flex items-center justify-center text-on-surface font-inter font-semibold hover:underline decoration-primary underline-offset-4 transition-all;
+    @apply inline-flex items-center justify-center text-on-surface font-jakarta font-semibold hover:underline decoration-primary underline-offset-4 transition-all;
   }
 
   /* Form Inputs (Minimalist bottom-border/light stroke with soft glow) */
@@ -308,7 +307,7 @@ h3,
     @apply bg-surface-container-lowest rounded overflow-hidden soft-shadow hover-lift cursor-pointer flex flex-col;
   } */
   .recipe-card-image-wrap {
-    @apply w-full h-[70%] overflow-hidden rounded-t;
+    @apply w-full h-[70%] overflow-hidden rounded-t-sm;
   }
   .recipe-card-image {
     @apply w-full h-full object-cover rounded-lg;

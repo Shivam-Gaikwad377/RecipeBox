@@ -9,7 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.4.0",
     "@imagekit/nodejs": "^7.10.0",
+    "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
     "dotenv": "^17.4.2",
@@ -21,6 +23,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-email": "^6.9.0",
+    "react-hook-form": "^7.82.0",
     "resend": "^6.18.0",
     "zod": "^4.4.3"
   },

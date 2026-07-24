@@ -5,8 +5,8 @@ export const signUpSchema = z.object({
   username: z
     .string()
     .min(3)
-    .regex(/^[a-z0-9-]+$/i, "Use letters, numbers, and hyphens only."),
-  email: z.string().email(),
+    .regex(/^[a-z]{3,16}$/, "Use letters numbers and symbols only."),
+  email: z.email(),
   password: z.string().min(8),
   bio: z.string().max(240).optional()
 });
