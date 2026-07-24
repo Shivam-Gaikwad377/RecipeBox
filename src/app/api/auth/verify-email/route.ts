@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     // Explicit select in case these fields are select:false in the schema.
     const user = await User.findOne({ email }).select(
-      "+verificationToken +ExpiresAt isEmailVerified"
+      "+verificationToken +ExpiresAt +isEmailVerified"
     );
 
     if (!user) {
@@ -36,9 +36,9 @@ export async function POST(request: Request) {
     }
 
     const isCodeValid = user.verificationToken === verificationToken;
-    const isCodeNotExpired = !!user.ExpiresAt && user.ExpiresAt > new Date();
+    const isCodeExpired = !!user.ExpiresAt && user.ExpiresAt <= new Date();
 
-    if (!isCodeValid || !isCodeNotExpired) {
+    if (!isCodeValid || isCodeExpired) {
       // Log the real reason server-side; keep client message generic
       // so you're not handing out an OTP-guessing oracle.
       console.warn("Verification failed:", {
