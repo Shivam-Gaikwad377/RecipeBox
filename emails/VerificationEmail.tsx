@@ -41,15 +41,15 @@ export default function VerificationEmail({
       <Head />
       <Tailwind>
         <Body className="bg-white font-aws text-[#212121]">
-          <Preview>FreelanceFlow Email Verification</Preview>
+          <Preview>RecipeBox Email Verification</Preview>
           <Container className="p-5 mx-auto bg-[#eee]">
             <Section className="bg-white">
               <Section className="bg-primary flex py-5 items-center justify-center">
                 <Img
-                  src={`${baseUrl}/static/freelanceflow-logo.png`}
+                  src={`${baseUrl}/static/recipebox-logo.png`}
                   width="75"
                   height="45"
-                  alt="FreelanceFlow's Logo"
+                  alt="RecipeBox's Logo"
                 />
               </Section>
               <Section className="py-6.25 px-8.75">
@@ -57,7 +57,7 @@ export default function VerificationEmail({
                   Verify your email address
                 </Heading>
                 <Text className="text-[#333] text-[14px] leading-6 mt-6 mb-3.5 mx-0">
-                  Thanks for starting the new FreelanceFlow account creation
+                  Thanks for starting the new RecipeBox account creation
                   process. We want to make sure it's really you. Please enter
                   the following verification code when prompted. If you
                   don&apos;t want to create an account, you can ignore this
@@ -85,12 +85,12 @@ export default function VerificationEmail({
               </Section>
             </Section>
             <Text style={footer}>
-              © 2026 FreelanceFlow · All rights reserved.
+              © {new Date().getFullYear()} RecipeBox · All rights reserved.
             </Text>
             <Text style={footer}>
-              You're receiving this because you created a FreelanceFlow account.
+              You're receiving this because you created a RecipeBox account.
               If this wasn't you,{" "}
-              <Link href="mailto:support@freelanceflow.app" style={anchor}>
+              <Link href="mailto:support@recipebox.app" style={anchor}>
                 contact support
               </Link>
               .

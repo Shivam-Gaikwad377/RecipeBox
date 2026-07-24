@@ -45,7 +45,7 @@ const userSchema = new Schema(
     },
     verificationToken: {
       type: String,
-      select: false,
+      required: false,
     },
     pendingEmail: {
       type: String,

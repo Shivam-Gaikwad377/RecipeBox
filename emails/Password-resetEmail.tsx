@@ -41,15 +41,15 @@ export default function PasswordResetEmail({
       <Head />
       <Tailwind>
         <Body className="bg-white font-aws text-[#212121]">
-          <Preview>FreelanceFlow Password Reset</Preview>
+          <Preview>RecipeBox Password Reset</Preview>
           <Container className="p-5 mx-auto bg-[#eee]">
             <Section className="bg-white">
               <Section className="bg-primary flex py-5 items-center justify-center">
                 <Img
-                  src={`${baseUrl}/static/freelanceflow-logo.png`}
+                  src={`${baseUrl}/static/recipebox-logo.png`}
                   width="75"
                   height="45"
-                  alt="FreelanceFlow's Logo"
+                  alt="RecipeBox's Logo"
                 />
               </Section>
               <Section className="py-6.25 px-8.75">
@@ -79,18 +79,18 @@ export default function PasswordResetEmail({
               <Hr />
               <Section className="py-6.25 px-8.75">
                 <Text className="text-[#333] text-[14px] m-0">
-                  FreelanceFlow will never email you and ask you to disclose or
+                  RecipeBox will never email you and ask you to disclose or
                   verify your password, credit card, or banking account number.
                 </Text>
               </Section>
             </Section>
             <Text style={footer}>
-              © 2026 FreelanceFlow · All rights reserved.
+              © {new Date().getFullYear()} RecipeBox · All rights reserved.
             </Text>
             <Text style={footer}>
               You're receiving this because you requested a password reset.
               If this wasn't you,{" "}
-              <Link href="mailto:support@freelanceflow.app" style={anchor}>
+              <Link href="mailto:support@recipebox.app" style={anchor}>
                 contact support
               </Link>
               .
