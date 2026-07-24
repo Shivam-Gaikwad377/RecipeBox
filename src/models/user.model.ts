@@ -1,4 +1,5 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
+import { required } from "zod/mini";
 
 const userSchema = new Schema(
   {
@@ -15,13 +16,14 @@ const userSchema = new Schema(
     },
     email: {
       type: String,
+      required: true,
       trim: true,
       unique: true,
       sparse: true,
     },
     passwordHash: {
        type: String, 
-       select: false 
+       required: true,
       },
     avatarUrl: { 
       type: String,  
