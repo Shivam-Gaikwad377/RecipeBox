@@ -5,20 +5,20 @@ import crypto from "crypto";
 import { connectToDatabase } from "@/lib/dbConfig";
 import { User } from "@/models/user.model";
 import { NextResponse } from "next/server";
-import { registerSchema } from "@/schemas/register.schema";
+import { signUpSchema } from "@/schemas/signup.schema";
 
 export async function POST(request: Request) {
   try {
     await connectToDatabase();
 
     const body = await request.json();
-    const parseResult = registerSchema.safeParse(body);
+    const parseResult = signUpSchema.safeParse(body);
 
     if (!parseResult.success) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
-          message: parseResult.error.issues.map((e) => e.message).join(", "),
+          message: parseResult.error.issues.map((e ) => e.message).join(", "),
         },
         { status: 400 }
       );

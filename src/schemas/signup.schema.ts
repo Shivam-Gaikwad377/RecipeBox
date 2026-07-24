@@ -1,6 +1,6 @@
 import {z} from "zod";
 
-export const registerSchema = z.object({
+export const signUpSchema = z.object({
   name: z.string().min(2),
   username: z
     .string()
@@ -12,5 +12,5 @@ export const registerSchema = z.object({
 });
 
 
-export type RegisterSchemaInput = z.input<typeof registerSchema>;
-export type RegisterSchemaOutput = z.output<typeof registerSchema>;
+export type SignUpSchemaInput = z.input<typeof signUpSchema>;
+export type SignUpSchemaOutput = z.output<typeof signUpSchema>;
