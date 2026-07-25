@@ -30,6 +30,13 @@ export default function RootLayout({
       lang="en"
       className={cn(geistSans.variable, geistMono.variable, "h-full antialiased")}
     >
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+          rel="stylesheet"
+        />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"></link>
+      </head>
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
         <Toaster />
