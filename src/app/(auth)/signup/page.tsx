@@ -1,5 +1,6 @@
 "use client"
 import React from 'react'
+import { useState } from "react"
 import Image from 'next/image';
 import leftImage from "../../../../public/a_beautiful_high_quality_photograph_of_fresh_ingredients_on_a_wooden_kitchen.png"
 import { signUpSchema } from "@/schemas/signup.schema";
@@ -8,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SignUpSchemaInput, SignUpSchemaOutput } from "@/schemas/signup.schema";
 import ApiResponse from '@/types/ApiResponse';
+import {EyeOff, Eye} from "lucide-react"
 
 const Page = () => {
     const form = useForm<SignUpSchemaInput>({
@@ -21,14 +23,14 @@ const Page = () => {
     });
 
     const { register, handleSubmit, formState: { errors } } = form;
-
+    const [showPassword, setShowPassword] = useState(false);
     const onSubmit = async (data: SignUpSchemaInput) => {
         let response;
         try {
-             response = await axios.post<ApiResponse>("/api/auth/signup", data);
-                    
+            response = await axios.post<ApiResponse>("/api/auth/signup", data);
+
         } catch (error) {
-            
+
             console.error("Error creating user:", error);
         }
     };
@@ -75,6 +77,7 @@ const Page = () => {
                                 <input
                                     className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                                     id="fullName"
+                                    placeholder='Jane Doe'
                                     type="text"
                                     {...register("name")}
                                 />
@@ -120,9 +123,16 @@ const Page = () => {
                                     className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                                     id="password"
                                     placeholder="••••••••"
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     {...register("password")}
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3  -translate-y-1/5 top-1/2 text-on-surface-variant hover:text-on-surface transition-all"
+                                >
+                                    {showPassword ? <Eye /> : <EyeOff/>}
+                                </button>
                                 {errors.password && <p className="text-error text-sm mt-1">{errors.password.message}</p>}
                             </div>
 
@@ -134,13 +144,18 @@ const Page = () => {
                             </button>
                         </form>
 
-                        <div className="mt-xl text-center">
-                            <p className="font-body-md text-body-md text-on-surface-variant">
-                                Already have an account?{" "}
-                                <a className="text-primary font-label-md text-label-md hover:underline transition-all" href="#">
-                                    Log in
-                                </a>
-                            </p>
+                        <div className="mt-xl flex flex-col gap-md text-center">
+                            <div>
+                                <p className="font-body-md text-body-md text-on-surface-variant">
+                                    Already have an account?{" "}
+                                    <a className="text-primary font-label-md text-label-md hover:underline transition-all" href="#">
+                                        Log in
+                                    </a>
+                                </p>
+                            </div>
+                            <div className="absolute bottm-lg right-lg  font-body-sm text-outline">
+                                © {new Date().getFullYear()} RecipeBox.
+                            </div>
                         </div>
                     </div>
                 </div>
