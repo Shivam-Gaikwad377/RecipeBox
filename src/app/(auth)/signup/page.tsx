@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SignUpSchemaInput, SignUpSchemaOutput } from "@/schemas/signup.schema";
 import ApiResponse from '@/types/ApiResponse';
-import {EyeOff, Eye} from "lucide-react"
+import { EyeOff, Eye } from "lucide-react"
 
 const Page = () => {
     const form = useForm<SignUpSchemaInput>({
@@ -131,7 +131,7 @@ const Page = () => {
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute right-3  -translate-y-1/5 top-1/2 text-on-surface-variant hover:text-on-surface transition-all"
                                 >
-                                    {showPassword ? <Eye /> : <EyeOff/>}
+                                    {showPassword ? <Eye /> : <EyeOff />}
                                 </button>
                                 {errors.password && <p className="text-error text-sm mt-1">{errors.password.message}</p>}
                             </div>
@@ -153,13 +153,26 @@ const Page = () => {
                                     </a>
                                 </p>
                             </div>
-                            <div className="absolute bottm-lg right-lg  font-body-sm text-outline">
-                                © {new Date().getFullYear()} RecipeBox.
-                            </div>
+
                         </div>
                     </div>
                 </div>
             </main>
+            <footer
+                className="bg-surface w-full bottom-0 flex flex-col md:flex-row justify-between items-center px-margin-desktop py-md gap-md mt-auto border-t border-outline-variant"
+            >
+                <div
+                    className="font-headline-sm text-headline-sm text-primary "
+                >
+                    RecipeBox
+                </div>
+
+                <div
+                    className="font-label-sm text-label-sm text-on-tertiary-fixed-variant  text-center md:text-right"
+                >
+                    © {new Date().getFullYear()} RecipeBox. Crafted for culinary enthusiasts.
+                </div>
+            </footer>
         </div>
     );
 };
