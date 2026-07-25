@@ -6,7 +6,6 @@ import { authOptions } from "../../auth/[...nextauth]/options";
 import { getImageKitClient } from "@/lib/imagekit";
 import ApiResponse from "@/types/ApiResponse";
 
-// Helper function to lazily initialize ImageKit only when a request runs
 
 export async function PATCH(req: NextRequest) {
   try {
