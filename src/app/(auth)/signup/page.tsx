@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { SignUpSchemaInput, SignUpSchemaOutput } from "@/schemas/signup.schema";
 import ApiResponse from '@/types/ApiResponse';
 import { EyeOff, Eye } from "lucide-react"
+import { toast } from "sonner";
 
 const Page = () => {
     const form = useForm<SignUpSchemaInput>({
