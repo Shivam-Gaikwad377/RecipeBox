@@ -4,7 +4,7 @@ import ApiResponse from "@/types/ApiResponse";
 import { emailSchema } from "@/schemas/email.schema";
 import { sendPasswordResetEmail } from "@/helpers/sendPasswordResetEmail";
 import { NextResponse } from "next/server";
-
+import crypto from "crypto";
 export async function POST(request: Request) {
   try {
     //connect to database and validate email format
@@ -30,10 +30,7 @@ export async function POST(request: Request) {
       );
     }
     //generate OTP and expiration time
-    const verificationToken = Math.random()
-      .toString(36)
-      .substring(2, 8)
-      .toUpperCase();
+     const verificationToken = crypto.randomInt(100000, 1000000).toString();
     const expirationTime = new Date(Date.now() + 10 * 60 * 1000);
     user.verificationToken = verificationToken;
     user.ExpiresAt = expirationTime;
@@ -60,7 +57,7 @@ export async function POST(request: Request) {
       {
         success: true,
         message:
-          "Password reset email sent successfully. Please check your email for the OTP.",
+          "If the user with this email exist, a password reset email will be sent",
       },
       { status: 200 }
     );
