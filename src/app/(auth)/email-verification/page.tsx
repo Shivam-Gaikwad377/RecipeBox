@@ -54,6 +54,7 @@ const VerifyForm = () => {
                 toast.error(message);
                 return;
             }
+            toast.success("Email verified successfully! Redirecting to login...");
             router.replace("/login");
         } catch (err: any) {
             const message = err.response?.data?.message || "Invalid verification code. Please try again.";
@@ -119,7 +120,7 @@ const VerifyForm = () => {
                     <div
                         className="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mb-md text-primary"
                     >
-                        <span className="material-symbols-outlined text-[32px]" 
+                        <span className="material-symbols-outlined text-[32px]"
                         >shield_person</span>
                     </div>
                     <h1 className="font-headline-md text-headline-md text-on-surface mb-sm">
@@ -153,6 +154,7 @@ const VerifyForm = () => {
                         <button
                             className="w-full bg-primary text-on-primary font-label-md text-label-md py-4 px-6 rounded-full hover:bg-primary-container hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] mb-md flex items-center justify-center gap-2"
                             type="button"
+                            onClick={handleSubmit}
                         >
                             Verify Account
                             <span
@@ -164,6 +166,8 @@ const VerifyForm = () => {
                     <div className="mt-sm font-label-sm text-label-sm text-on-surface-variant">
                         Didn't receive the code?
                         <button
+                            disabled={canResend}
+                            onClick={handleResend}
                             className="text-primary font-label-md text-label-md hover:underline hover:text-primary-container transition-colors ml-xs"
                         >
                             Resend
@@ -172,7 +176,7 @@ const VerifyForm = () => {
                 </div>
             </div>
 
-           <footer
+            <footer
                 className="bg-surface w-full bottom-0 flex flex-col md:flex-row justify-between items-center px-margin-desktop py-md gap-md mt-auto border-t border-outline-variant"
             >
                 <div
