@@ -10,6 +10,7 @@ import ApiResponse from "@/types/ApiResponse";
 import Gradient from "../../../../public/Gradient.png";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { set } from "mongoose";
 const VerifyForm = () => {
 
     const [timer, setTimer] = useState(60); // 60 seconds (1 minute)
@@ -18,7 +19,7 @@ const VerifyForm = () => {
     const email = searchParams.get("email") || "";
     const [otp, setOtp] = useState<string[]>(Array(6).fill("")); // Initialize an array of 6 empty strings
     const inputRef = useRef<(HTMLInputElement | null)[]>([]);
-    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
     const router = useRouter();
 
     const handleOtpChange = (index: number, value: string) => {
@@ -44,22 +45,26 @@ const VerifyForm = () => {
         event.preventDefault();
         const enteredOtp = otp.join("");
         try {
+            setLoading(true);
             const response: ApiResponse = await axios.post("/api/auth/verify-email", {
                 email,
                 verificationToken: enteredOtp,
             });
             if (!response.data.success) {
                 const message = response.data.message ?? "Invalid verification code. Please try again.";
-                setError(message);
+                setLoading(false);
                 toast.error(message);
                 return;
             }
+
             toast.success("Email verified successfully! Redirecting to login...");
             router.replace("/login");
         } catch (err: any) {
             const message = err.response?.data?.message || "Invalid verification code. Please try again.";
-            setError(message);
+            setLoading(false);
             toast.error(message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -86,14 +91,16 @@ const VerifyForm = () => {
             const response = await axios.post("/api/auth/resend-verification-code", { email });
             if (response.data.success) {
                 setTimer(60);
-                setError(null);
+                setLoading(false);
                 toast.success("Verification code resent successfully.");
             }
         } catch (err: unknown) {
             if (err instanceof Error) {
-                setError(err.message || "Failed to resend verification code. Please try again.");
+                setLoading(false);
+                toast.error(err.message || "Failed to resend verification code. Please try again.");
             } else {
-                setError("Failed to resend verification code. Please try again.")
+                setLoading(false);
+                toast.error("Failed to resend verification code. Please try again.")
             }
         }
     };
@@ -152,9 +159,10 @@ const VerifyForm = () => {
 
                         </div>
                         <button
-                            className="w-full bg-primary text-on-primary font-label-md text-label-md py-4 px-6 rounded-full hover:bg-primary-container hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] mb-md flex items-center justify-center gap-2"
+                            className="w-full disabled:opacity-50 bg-primary text-on-primary font-label-md text-label-md py-4 px-6 rounded-full hover:bg-primary-container hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] mb-md flex items-center justify-center gap-2"
                             type="button"
                             onClick={handleSubmit}
+                            disabled={loading}
                         >
                             Verify Account
                             <span
@@ -166,7 +174,7 @@ const VerifyForm = () => {
                     <div className="mt-sm font-label-sm text-label-sm text-on-surface-variant">
                         Didn't receive the code?
                         <button
-                            disabled={canResend}
+                            disabled={loading || !canResend}
                             onClick={handleResend}
                             className="text-primary font-label-md text-label-md hover:underline hover:text-primary-container transition-colors ml-xs"
                         >

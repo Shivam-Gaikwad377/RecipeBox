@@ -60,7 +60,7 @@ export default function SignIn() {
 
     return (
         < div
-            className="bg-surface-container-low text-on-surface font-body-md min-h-screen flex flex-col"
+            className="bg-background text-on-background font-body-md min-h-screen flex flex-col antialiased bg-ambient"
         >
 
 
@@ -93,7 +93,7 @@ export default function SignIn() {
                         </p>
                     </div>
 
-                    <form  className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+                    <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
                         <div>
                             <label
                                 className="block font-label-md text-label-md text-on-surface mb-xs"
@@ -118,7 +118,7 @@ export default function SignIn() {
                                 <input
                                     className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                                     id="password"
-                                    
+
                                     placeholder="••••••••"
                                     type={showPassword ? "text" : "password"}
                                     {...register("password")}

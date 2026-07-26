@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       );
     }
     //find user by email
-    const user = await User.findOne({ email: parseResult.data.email });
+    const user = await User.findOne({ email: identifier });
     if (!user) {
       return NextResponse.json<ApiResponse>(
         {
@@ -26,11 +26,11 @@ export async function POST(request: Request) {
           message:
             "If the user with this email exist, a password reset email will be sent",
         },
-        { status: 200 }
+        { status: 201 }
       );
     }
     //generate OTP and expiration time
-     const verificationToken = crypto.randomInt(100000, 1000000).toString();
+    const verificationToken = crypto.randomInt(100000, 1000000).toString();
     const expirationTime = new Date(Date.now() + 10 * 60 * 1000);
     user.verificationToken = verificationToken;
     user.ExpiresAt = expirationTime;
