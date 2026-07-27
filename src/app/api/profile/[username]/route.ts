@@ -58,7 +58,12 @@ export async function PATCH(req:Request, { params }: { params: { username: strin
         }
          const updatedUser = User.findOneAndUpdate(
             { _id: session.user._id },
-            parsedBody.data,
+            { $set: {
+                name: parsedBody.data.name,
+                username: parsedBody.data.username,
+                pendingEmail: parsedBody.data.email,
+                bio: parsedBody.data.bio
+            } },
             { new: true }
          ).select("-passwordHash -verficationToken -ExpiresAt");
          if(!updatedUser){

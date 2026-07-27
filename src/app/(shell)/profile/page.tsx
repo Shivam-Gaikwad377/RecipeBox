@@ -6,12 +6,56 @@ import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react";
 import ApiResponse from "@/types/ApiResponse";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { updateProfileSchema, UpdateProfileInput, UpdateProfileOutput } from '@/schemas/updateProfile.schema';
+import useDebounce from '@/hooks/useDebouncedValue';
 const page = () => {
   const session = useSession();
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState<UserDocument | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [usernameAvailable, setUsernameAvailable] = useState<number>(0);
+  const [newusername, setNewUsername] = useState<string>("");
+  const debouncedUsername = useDebounce(newusername, 1000);
+  useEffect(() => {
+    const checkUsernameAvailability = async () => {
+      if (debouncedUsername && debouncedUsername !== session?.data?.user?.username) {
+        try {
+          const response = await axios.get<ApiResponse>(`/api/profile/username-check?username=${debouncedUsername}`);
+          setUsernameAvailable(response?.status);
+        } catch (error) {
+          console.error("Error checking username availability:", error);
+        }
+      } else {
+        setUsernameAvailable(null);
+      }
+    };
+    checkUsernameAvailability();
+  }, [debouncedUsername]);
+
+  const form = useForm<UpdateProfileInput>({
+    resolver: zodResolver(updateProfileSchema),
+    defaultValues: {
+      name: userData?.name || "",
+      username: newusername || "",
+      email: userData?.email || "",
+      bio: userData?.bio || "",
+    },
+  });
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = form;
+  useEffect(() => {
+    if (userData) {
+      reset({
+        name: userData.name || "",
+        username: newusername || "",
+        email: userData.email || "",
+        bio: userData.bio || "",
+      });
+    }
+  }, [userData, reset]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -21,6 +65,7 @@ const page = () => {
         try {
           const response = await axios.get<ApiResponse>(`/api/profile/${username}`);
           setUserData(response?.data?.data);
+          setNewUsername(response?.data?.data?.username || "");
         } catch (error) {
           console.error("Error fetching user data:", error);
         }
@@ -76,7 +121,7 @@ const page = () => {
             >photo_camera</span>
           </button>
           <input
-            className="px-md py-sm hidden bg-surface-container-high text-on-surface font-label-md text-label-md rounded border border-outline-variant hover:bg-surface-variant transition-colors  items-center gap-xs"
+            className="px-md py-sm hidden bg-surface-container-high text-on-surface  text-label-md rounded border border-outline-variant hover:bg-surface-variant transition-colors  items-center gap-xs"
             type="file"
             accept="image/*"
             onChange={handleImageChange}
@@ -96,19 +141,19 @@ const page = () => {
           </p>
           <div className="flex items-center gap-lg mb-md">
             <div className="flex flex-col items-center md:items-start">
-              <span className="font-label-md text-label-md text-on-surface"
+              <span className=" text-label-md text-on-surface"
               > 24</span>
               <span className="font-label-sm text-label-sm text-on-surface-variant"
               >Recipes</span>
             </div>
             <div className="flex flex-col items-center md:items-start">
-              <span className="font-label-md text-label-md text-on-surface"
+              <span className=" text-label-md text-on-surface"
               >1.2k</span>
               <span className="font-label-sm text-label-sm text-on-surface-variant"
               >Followers</span>
             </div>
             <div className="flex flex-col items-center md:items-start">
-              <span className="font-label-md text-label-md text-on-surface"
+              <span className=" text-label-md text-on-surface"
               > 158</span>
               <span className="font-label-sm text-label-sm text-on-surface-variant"
               >Following</span>
@@ -116,7 +161,7 @@ const page = () => {
           </div>
           <button
             onClick={() => setIsEditing(true)}
-            className="px-md py-sm rounded-full border-2 border-primary text-primary font-label-md text-label-md hover:bg-primary-fixed transition-colors hover-lift flex items-center gap-xs bg-surface-container-lowest"
+            className="px-md py-sm rounded-full border-2 border-primary text-primary  text-label-md hover:bg-primary-fixed transition-colors hover-lift flex items-center gap-xs bg-surface-container-lowest"
           >
             <span className="material-symbols-outlined text-[18px]" data-icon="edit"
             >edit</span>
@@ -133,7 +178,7 @@ const page = () => {
           className="lg:col-span-5 bg-surface-container-lowest rounded-xl p-md md:p-lg paper-shadow"
         >
           <h2
-            className="font-headline-sm text-headline-sm text-on-surface mb-lg border-b border-surface-dim pb-sm"
+            className="font-headline-md text-headline-md text-on-surface mb-lg border-b border-surface-dim pb-sm"
           >
             Profile Details
           </h2>
@@ -141,44 +186,44 @@ const page = () => {
 
             <div className="flex flex-col gap-xs relative pt-4">
               <p
-                className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                className="absolute top-0 left-3 text-label-md  text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
 
               >Full Name</p>
               <p
-                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm  text-body-md text-on-surface placeholder:text-outline"
 
               >{userData?.name || "Jane Doe"}</p>
             </div>
 
             <div className="flex flex-col gap-xs relative pt-4 mt-sm">
               <p
-                className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                className="absolute top-0 left-3 text-label-md  text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
 
               >Username</p>
               <p
-                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm  text-body-md text-on-surface placeholder:text-outline"
 
               >{userData?.username || "janecooks"}</p>
             </div>
 
             <div className="flex flex-col gap-xs relative pt-4 mt-sm">
               <p
-                className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                className="absolute top-0 left-3 text-label-md  text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
 
               >Email Address</p>
               <p
-                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm  text-body-md text-on-surface placeholder:text-outline"
 
               >{userData?.email || "jane.doe@example.com"}</p>
             </div>
 
             <div className="flex flex-col gap-xs relative pt-4 mt-sm mb-md">
               <p
-                className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                className="absolute top-0 left-3 text-label-md  text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
 
               >Bio</p>
               <p
-                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline resize-none"
+                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm  text-body-md text-on-surface placeholder:text-outline resize-none"
 
               >
                 {userData?.bio || "No bio available."}</p>
@@ -191,7 +236,7 @@ const page = () => {
             className="lg:col-span-5 bg-surface-container-lowest rounded-xl p-md md:p-lg paper-shadow"
           >
             <h2
-              className="font-headline-sm text-headline-sm text-on-surface mb-lg border-b border-surface-dim pb-sm"
+              className="font-headline-md text-headline-md text-on-surface mb-lg border-b border-surface-dim pb-sm"
             >
               Profile Details
             </h2>
@@ -199,67 +244,82 @@ const page = () => {
 
               <div className="flex flex-col gap-xs relative pt-4">
                 <label
-                  className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                  className="absolute top-0 left-3 text-label-md font-bold text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
                   htmlFor="fullName"
                 >Full Name</label>
                 <input
-                  className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                   id="fullName"
                   type="text"
-                  value={userData?.name || "Jane Doe"}
+                  
                 />
               </div>
 
               <div className="flex flex-col gap-xs relative pt-4 mt-sm">
                 <label
-                  className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                  className="absolute top-0 left-3 text-label-md  text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
                   htmlFor="username"
                 >Username</label>
                 <input
-                  className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                   id="username"
                   type="text"
-                  value={userData?.username || "janecooks"}
+                  
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  
                 />
+                
+                {usernameAvailable ? (<p className="text-success text-sm">Username is available</p>) : (<p className="text-error text-sm">Username is not available</p>)}
               </div>
 
               <div className="flex flex-col gap-xs relative pt-4 mt-sm">
                 <label
-                  className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                  className="absolute top-0 left-3 text-label-md  text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
                   htmlFor="email"
                 >Email Address</label>
                 <input
-                  className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                   id="email"
                   type="email"
-                  value={userData?.email || "jane.doe@example.com"}
+                
                 />
               </div>
 
               <div className="flex flex-col gap-xs relative pt-4 mt-sm mb-md">
                 <label
-                  className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                  className="absolute top-0 left-3 text-label-md  text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
                   htmlFor="bio"
                 >Bio</label>
                 <textarea
-                  className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline resize-none"
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                   id="bio"
                   rows={4}
-                >
-                  Passionate home cook exploring the intersection of rustic Italian flavors and modern sourdough techniques. Always seeking the perfect crumb.</textarea>
+                  {...register("bio")}
+                />
+                  
               </div>
 
-              <button
-                onClick={() => setIsEditing(false)}
-                className="mt-sm w-full bg-primary text-on-primary font-label-md text-label-md py-sm rounded-full hover:bg-primary-container hover-lift transition-all shadow-sm flex items-center justify-center gap-xs"
-                type="button"
-              >
-                <span
-                  className="material-symbols-outlined text-[18px]"
-                  data-icon="check_circle"
-                >check_circle</span>
-                Save Changes
-              </button>
+              <div className="flex w-full justify-end gap-sm">
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="px-md py-sm rounded-full border-2 border-primary text-primary  text-label-md hover:bg-primary-fixed transition-colors hover-lift flex items-center gap-xs bg-surface-container-lowest"
+                >
+                  <span className="material-symbols-outlined text-[18px]" data-icon="edit"
+                  >cancel</span>
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="  px-md bg-primary text-on-primary  text-label-md py-sm rounded-full hover:bg-primary-container hover-lift transition-all shadow-sm flex items-center justify-center gap-xs"
+                  type="button"
+                >
+                  <span
+                    className="material-symbols-outlined text-[18px]"
+                    data-icon="check_circle"
+                  >check_circle</span>
+                  Save Changes
+                </button>
+              </div>
             </form>
           </section>)}
 
@@ -269,7 +329,7 @@ const page = () => {
               My Collections
             </h2>
             <button
-              className="text-primary font-label-md text-label-md hover:underline flex items-center gap-xs"
+              className="text-primary  text-label-md hover:underline flex items-center gap-xs"
             >
               View All
               <span
@@ -367,7 +427,7 @@ const page = () => {
                   data-icon="add"
                 >add</span>
               </div>
-              <span className="font-label-md text-label-md font-semibold"
+              <span className=" text-label-md font-semibold"
               >Create New Collection</span>
             </button>
           </div>
