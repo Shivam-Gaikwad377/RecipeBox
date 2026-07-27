@@ -1,329 +1,379 @@
+"use client"
 import React from 'react'
-import Footer from '@/components/ui/shell/Footer'
+import axios from "axios"
+import { UserDocument } from "@/models/user.model";
+import { useState, useEffect, useRef } from "react"
+import { useSession } from "next-auth/react";
+import ApiResponse from "@/types/ApiResponse";
+import { toast } from "sonner";
 const page = () => {
+  const session = useSession();
+  const [isEditing, setIsEditing] = useState(false);
+  const [userData, setUserData] = useState<UserDocument | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (session?.data?.user?.username) {
+        const username = session?.data?.user?.username;
+
+        try {
+          const response = await axios.get<ApiResponse>(`/api/profile/${username}`);
+          setUserData(response?.data?.data);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        }
+      }
+    };
+    fetchUserData();
+  }, [session?.data?.user?.username]);
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 1. Grab the file directly from the event target
+    const targetFile = e.target.files?.[0];
+    if (!targetFile) return;
+
+    // Update local state for tracking if needed
+    setAvatarFile(targetFile);
+    try {
+      const uploadData = new FormData();
+      uploadData.append("avatar", targetFile as File);
+
+      const res = await axios.patch("/api/profile/avatar", uploadData);
+      const updatedProfile = await axios.get(`/api/profile/${userData?.username}`);
+      setUserData(updatedProfile.data.data);
+      toast.success("Avatar updated successfully!");
+      // Refresh profile data to show new avatar
+    } catch (error) {
+      toast.error("Error updating avatar.");
+    } finally {
+    }
+  };
   return (
-    <><body className="font-body-md antialiased pb-24 md:pb-0">
 
-      <nav
-        className="hidden md:flex w-full top-0 sticky bg-surface dark:bg-surface-dim shadow-sm z-50"
-      >
-        <div
-          className="flex justify-between items-center px-margin-desktop py-4 max-w-7xl mx-auto w-full"
-        >
-          <div className="flex items-center gap-md">
-            <span
-              className="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim"
-            >RecipeBox</span>
-            <div className="flex gap-md ml-lg">
-              <a
-                className="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200"
-                href="#"
-              >Discover</a>
-              <a
-                className="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200"
-                href="#"
-              >Feed</a>
-              <a
-                className="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200"
-                href="#"
-              >Cookbooks</a>
-            </div>
-          </div>
-          <div
-            className="flex items-center gap-sm text-primary dark:text-primary-fixed-dim"
-          >
-            <button
-              className="p-2 transition-transform duration-200 active:scale-95 hover:bg-surface-variant rounded-full"
-            >
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
-            <button
-              className="p-2 transition-transform duration-200 active:scale-95 bg-primary-container text-on-primary-container rounded-full"
-            >
-              <span
-                className="material-symbols-outlined"
-                style={{ fontVariationSettings: '"FILL" 1' }}
-              >account_circle</span>
-            </button>
-          </div>
-        </div>
-      </nav>
 
-      <main
-        className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop pt-md pb-xl"
+    <>
+      <section
+        className="col-span-4 md:col-span-12 flex flex-col md:flex-row items-center md:items-start gap-lg mb-xl mt-lg"
       >
 
-        <section className="flex flex-col items-center text-center mt-xl mb-xl">
-          <div
-            className="w-32 h-32 rounded-full overflow-hidden mb-md shadow-md border-4 border-surface-container-lowest"
-          >
-            <img
-              className="w-full h-full object-cover"
-              data-alt="A highly detailed close-up portrait of an inviting, modern chef or food enthusiast in a warmly lit kitchen environment. The subject has a friendly expression, soft natural lighting highlights their features against a slightly blurred, bright minimalist background featuring soft cream and sage green tones. High-end food lifestyle photography aesthetic."
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYBlxoEFIeSxb8XpVkNRTF9B9XlE-tkeN1FlQo4uXMTyD3M10AnO4lTFZlJZgOPWleY7MFCKCZGqDUgqqYuNfHOkhb4c2O1V5c6PvLNOBLu1EPXPnbI_z_nWwS8Z5SZCdmrrKkRWysqNtzhr4n-h29a_6rTsXGm0bCoYePXAjdu_scH1hu9FIhFgiJW1xB1p8Vyz7bORvsQkGNxyq8kBvcaWMvuPKK43FCkQ8XDgkjsvuhaGM_g4YSM3E8Ym1Kn3GE1ffHD8fMGwI" />
-          </div>
-          <h1 className="font-headline-md text-headline-md text-on-background mb-xs">
-            Eleanor Vance
-          </h1>
-          <p className="font-body-md text-body-md text-on-surface-variant mb-md">
-            @eleanorcooks • Artisan Baker &amp; Pastry Enthusiast
-          </p>
-          <p
-            className="font-body-md text-body-md text-tertiary-container max-w-2xl mx-auto mb-lg"
-          >
-            Exploring the delicate balance between rustic charm and refined
-            technique. Believer in slow fermentation, seasonal fruits, and finding
-            joy in the process. Creating a communal epicurean space one loaf at a
-            time.
-          </p>
+        <div className="relative group">
+          <img
+            className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover shadow-sm ring-4 ring-surface-container-lowest"
+            data-alt="A high-quality, professional portrait photograph of a woman with warm lighting. She is smiling softly, set against a blurred, bright kitchen background. The image has a clean, natural, and inviting warm minimalist aesthetic with soft depth of field."
+            src={userData?.avatar?.avatarUrl}
+          />
           <button
-            className="bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md py-3 px-8 rounded-full transition-all duration-200 active:scale-95 shadow-sm mb-lg"
+            aria-label="Change avatar"
+            className="absolute bottom-0 right-0 bg-surface-container-lowest border border-outline-variant rounded-full p-2 shadow-sm text-primary hover:bg-surface-container hover-lift flex items-center justify-center transition-colors"
+            onClick={() => fileInputRef.current?.click()}
           >
-            Follow
+            <span
+              className="material-symbols-outlined text-[20px]"
+              data-icon="photo_camera"
+              data-weight="fill"
+              style={{ fontVariationSettings: '"FILL" 1' }}
+            >photo_camera</span>
           </button>
-          <div
-            className="flex justify-center gap-xl w-full max-w-lg border-t border-b border-surface-variant py-md"
+          <input
+            className="px-md py-sm hidden bg-surface-container-high text-on-surface font-label-md text-label-md rounded border border-outline-variant hover:bg-surface-variant transition-colors  items-center gap-xs"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            ref={fileInputRef}
+          />
+        </div>
+        <div
+          className="flex flex-col items-center md:items-start text-center md:text-left grow"
+        >
+          <h1
+            className="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-on-surface mb-xs"
           >
-            <div className="flex flex-col items-center">
-              <span className="font-headline-sm text-headline-sm text-on-background"
-              >142</span>
-              <span
-                className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-xs"
+            {userData?.name || "Jane Doe"}
+          </h1>
+          <p className="font-body-lg text-body-lg text-on-surface-variant mb-md">
+            @{userData?.username || "janecooks"}
+          </p>
+          <div className="flex items-center gap-lg mb-md">
+            <div className="flex flex-col items-center md:items-start">
+              <span className="font-label-md text-label-md text-on-surface"
+              > 24</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant"
               >Recipes</span>
             </div>
-            <div className="flex flex-col items-center">
-              <span className="font-headline-sm text-headline-sm text-on-background"
-              >12.4k</span>
-              <span
-                className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-xs"
+            <div className="flex flex-col items-center md:items-start">
+              <span className="font-label-md text-label-md text-on-surface"
+              >1.2k</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant"
               >Followers</span>
             </div>
-            <div className="flex flex-col items-center">
-              <span className="font-headline-sm text-headline-sm text-on-background"
-              >328</span>
-              <span
-                className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-xs"
+            <div className="flex flex-col items-center md:items-start">
+              <span className="font-label-md text-label-md text-on-surface"
+              > 158</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant"
               >Following</span>
             </div>
           </div>
-        </section>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="px-md py-sm rounded-full border-2 border-primary text-primary font-label-md text-label-md hover:bg-primary-fixed transition-colors hover-lift flex items-center gap-xs bg-surface-container-lowest"
+          >
+            <span className="material-symbols-outlined text-[18px]" data-icon="edit"
+            >edit</span>
+            Edit Profile Details
+          </button>
+        </div>
+      </section>
 
-        <section className="mb-lg">
-          <div className="flex gap-lg border-b border-surface-variant">
-            <button
-              className="font-label-md text-label-md text-primary border-b-2 border-primary pb-sm transition-colors"
+      <div
+        className="col-span-4 md:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-xl items-start"
+      >
+
+        {!isEditing ? (<section
+          className="lg:col-span-5 bg-surface-container-lowest rounded-xl p-md md:p-lg paper-shadow"
+        >
+          <h2
+            className="font-headline-sm text-headline-sm text-on-surface mb-lg border-b border-surface-dim pb-sm"
+          >
+            Profile Details
+          </h2>
+          <form className="flex flex-col gap-md">
+
+            <div className="flex flex-col gap-xs relative pt-4">
+              <p
+                className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+
+              >Full Name</p>
+              <p
+                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+
+              >{userData?.name || "Jane Doe"}</p>
+            </div>
+
+            <div className="flex flex-col gap-xs relative pt-4 mt-sm">
+              <p
+                className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+
+              >Username</p>
+              <p
+                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+
+              >{userData?.username || "janecooks"}</p>
+            </div>
+
+            <div className="flex flex-col gap-xs relative pt-4 mt-sm">
+              <p
+                className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+
+              >Email Address</p>
+              <p
+                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+
+              >{userData?.email || "jane.doe@example.com"}</p>
+            </div>
+
+            <div className="flex flex-col gap-xs relative pt-4 mt-sm mb-md">
+              <p
+                className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+
+              >Bio</p>
+              <p
+                className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline resize-none"
+
+              >
+                {userData?.bio || "No bio available."}</p>
+            </div>
+
+
+          </form>
+        </section>) : (
+          <section
+            className="lg:col-span-5 bg-surface-container-lowest rounded-xl p-md md:p-lg paper-shadow"
+          >
+            <h2
+              className="font-headline-sm text-headline-sm text-on-surface mb-lg border-b border-surface-dim pb-sm"
             >
-              Recipes
+              Profile Details
+            </h2>
+            <form className="flex flex-col gap-md">
+
+              <div className="flex flex-col gap-xs relative pt-4">
+                <label
+                  className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                  htmlFor="fullName"
+                >Full Name</label>
+                <input
+                  className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+                  id="fullName"
+                  type="text"
+                  value={userData?.name || "Jane Doe"}
+                />
+              </div>
+
+              <div className="flex flex-col gap-xs relative pt-4 mt-sm">
+                <label
+                  className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                  htmlFor="username"
+                >Username</label>
+                <input
+                  className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+                  id="username"
+                  type="text"
+                  value={userData?.username || "janecooks"}
+                />
+              </div>
+
+              <div className="flex flex-col gap-xs relative pt-4 mt-sm">
+                <label
+                  className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                  htmlFor="email"
+                >Email Address</label>
+                <input
+                  className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline"
+                  id="email"
+                  type="email"
+                  value={userData?.email || "jane.doe@example.com"}
+                />
+              </div>
+
+              <div className="flex flex-col gap-xs relative pt-4 mt-sm mb-md">
+                <label
+                  className="absolute top-0 left-3 text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1 -mt-2"
+                  htmlFor="bio"
+                >Bio</label>
+                <textarea
+                  className="minimal-input w-full bg-transparent rounded-lg px-sm py-sm font-body-md text-body-md text-on-surface placeholder:text-outline resize-none"
+                  id="bio"
+                  rows={4}
+                >
+                  Passionate home cook exploring the intersection of rustic Italian flavors and modern sourdough techniques. Always seeking the perfect crumb.</textarea>
+              </div>
+
+              <button
+                onClick={() => setIsEditing(false)}
+                className="mt-sm w-full bg-primary text-on-primary font-label-md text-label-md py-sm rounded-full hover:bg-primary-container hover-lift transition-all shadow-sm flex items-center justify-center gap-xs"
+                type="button"
+              >
+                <span
+                  className="material-symbols-outlined text-[18px]"
+                  data-icon="check_circle"
+                >check_circle</span>
+                Save Changes
+              </button>
+            </form>
+          </section>)}
+
+        <section className="lg:col-span-7 flex flex-col gap-md">
+          <div className="flex justify-between items-end mb-sm">
+            <h2 className="font-headline-sm text-headline-sm text-on-surface">
+              My Collections
+            </h2>
+            <button
+              className="text-primary font-label-md text-label-md hover:underline flex items-center gap-xs"
+            >
+              View All
+              <span
+                className="material-symbols-outlined text-[16px]"
+                data-icon="arrow_forward"
+              >arrow_forward</span>
             </button>
-            <button
-              className="font-label-md text-label-md text-on-surface-variant hover:text-primary pb-sm transition-colors"
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-gutter">
+
+            <a
+              className="group block bg-surface-container-lowest rounded-xl p-xs paper-shadow hover-lift"
+              href="#"
             >
-              Cookbooks
-            </button>
-            <button
-              className="font-label-md text-label-md text-on-surface-variant hover:text-primary pb-sm transition-colors"
+              <div
+                className="relative h-48 w-full rounded-lg overflow-hidden mb-sm"
+              >
+                <img
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  data-alt="A close-up, top-down view of freshly baked rustic Italian bread, steaming slightly, next to a bowl of rich tomato sauce and fresh basil on a distressed wooden table. Warm, natural lighting highlighting the crust textures. Minimalist, high-end food photography style."
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkM-W3WC3a0HU3RcO4m6Z62m8rGUw6RUL72hV1GOstclO_eDceVzyTgUOmpJit8629TK-2JgII4iZfgGQDn1AdtptGktDS_2eMCfIogLMccLmrjy81poxvQXuDZQPYw8BK-8WmUn0zuy_VRPKQn3ouQndyTGr7S8rwZrFY-KMpwjuYcziP__82uBaB3Iaj_6H_FyLiZBfrrDSCHCMyUhr5hwHb4dAG6CX9wOMXSiTkClgmHLXhhDrad-qSfscDpADA8dbONTVb2b8"
+                />
+                <div
+                  className="absolute inset-0 bg-linear-to-t from-inverse-surface/60 to-transparent"
+                ></div>
+                <span
+                  className="absolute bottom-sm left-sm text-on-primary font-label-sm text-label-sm bg-inverse-surface/40 backdrop-blur-md px-2 py-1 rounded-full border border-white/20"
+                >12 Recipes</span>
+              </div>
+              <div className="px-xs pb-xs">
+                <h3
+                  className="font-headline-sm text-headline-sm text-on-surface leading-tight mb-xs"
+                >
+                  Rustic Italian
+                </h3>
+                <p
+                  className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-xs"
+                >
+                  <span
+                    className="material-symbols-outlined text-[14px]"
+                    data-icon="public"
+                  >public</span>
+                  Public Collection
+                </p>
+              </div>
+            </a>
+
+            <a
+              className="group block bg-surface-container-lowest rounded-xl p-xs paper-shadow hover-lift"
+              href="#"
             >
-              Reviews
+              <div
+                className="relative h-48 w-full rounded-lg overflow-hidden mb-sm"
+              >
+                <img
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  data-alt="A beautifully scored sourdough boule cooling on a wire rack next to a dusting of flour and a linen towel. The lighting is soft and diffused, creating a serene, earthy, and warm minimalist atmosphere."
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_C3iaoGw0BJy1KimNn8QWDXmxEWy9BYR8xfs1JesB0yTlQEaA-shztu2zuTzDGFvoQX3s3ez2LY7dzqQw4fRK-xEUTTW0L9-OyO0BPHiLDobuo5IFuM5AvnUHki08WSxvFp6aRnDHUg7Rq4pVouM2Dz8AyViFJsuh6N8hD0fBgAOEk0tugJFHOfFVpSzzB4JMRqn8BZVQn47vF9O4IyMf4uEmYrvelS6ALQO_buSNFdubJlGrZeFqnOW-FED79TONQ3APg42gMvo"
+                />
+                <div
+                  className="absolute inset-0 bg-linear-to-t from-inverse-surface/60 to-transparent"
+                ></div>
+                <span
+                  className="absolute bottom-sm left-sm text-on-primary font-label-sm text-label-sm bg-inverse-surface/40 backdrop-blur-md px-2 py-1 rounded-full border border-white/20"
+                >8 Recipes</span>
+              </div>
+              <div className="px-xs pb-xs">
+                <h3
+                  className="font-headline-sm text-headline-sm text-on-surface leading-tight mb-xs"
+                >
+                  Sourdough Journey
+                </h3>
+                <p
+                  className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-xs"
+                >
+                  <span
+                    className="material-symbols-outlined text-[14px]"
+                    data-icon="lock"
+                    data-weight="fill"
+                    style={{ fontVariationSettings: '"FILL" 1' }}
+                  >lock</span>
+                  Private
+                </p>
+              </div>
+            </a>
+
+            <button
+              className="h-full min-h-62.5 border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center gap-sm text-on-surface-variant hover:text-primary hover:border-primary hover:bg-surface-container-low transition-all hover-lift"
+            >
+              <div
+                className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary mb-xs"
+              >
+                <span
+                  className="material-symbols-outlined text-[24px]"
+                  data-icon="add"
+                >add</span>
+              </div>
+              <span className="font-label-md text-label-md font-semibold"
+              >Create New Collection</span>
             </button>
           </div>
         </section>
+      </div>
 
-        <section
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter"
-        >
-
-          <article
-            className="bg-surface-container-lowest rounded-xl overflow-hidden card-shadow hover-lift cursor-pointer flex flex-col h-full"
-          >
-            <div className="relative h-64 w-full">
-              <img
-                className="w-full h-full object-cover"
-                data-alt="A beautiful, overhead shot of an artisan sourdough bread loaf resting on a rustic wooden board. The bread has a perfectly scored crust, dusted lightly with flour. Soft, warm natural sunlight streams across the scene, highlighting the texture of the crust. The background is a clean, minimalist cream marble surface, embodying a modern epicurean aesthetic."
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdAb7z1tWBnjSAbLEjpcvP6Mgb0pGEs4Jd6olz1Be8OQxXu4b9VIxjaESmmY4k75El47KeyYr7ZmeitJqUVCEBRHDGBRaaksIYEZT0FTi33PoNsNRqPNXvltLzIa58yQNYP4S0jjrnalLXtg0FNCDcatIIMrqEEbSpUMXDqrcV45-hufqIeAtQTG6NK3mFByz0qUBDG7Jl1VIY7kU7eZs_7H8VqNAlGG8E5seCRr2xGNzZsPP4zXiO2dRCxtUHQclggXmPelrXoZI" />
-              <button
-                className="absolute top-sm right-sm w-10 h-10 bg-surface-container-lowest/80 backdrop-blur-sm rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
-              >
-                <span className="material-symbols-outlined">favorite</span>
-              </button>
-            </div>
-            <div className="p-md flex flex-col flex-grow">
-              <div className="flex justify-between items-start mb-sm">
-                <span
-                  className="font-label-sm text-label-sm text-primary uppercase tracking-wider"
-                >Baking</span>
-                <div className="flex items-center gap-xs text-on-surface-variant">
-                  <span
-                    className="material-symbols-outlined text-[16px]"
-                    style={{ fontVariationSettings: '"FILL" 1' }}
-                  >star</span>
-                  <span className="font-label-sm text-label-sm">4.9</span>
-                </div>
-              </div>
-              <h3
-                className="font-headline-sm text-headline-sm text-on-background mb-sm line-clamp-2"
-              >
-                Classic Country Sourdough Loaf
-              </h3>
-              <div
-                className="mt-auto flex items-center gap-md text-on-surface-variant font-label-sm text-label-sm"
-              >
-                <div className="flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[16px]"
-                  >schedule</span>
-                  <span>24h</span>
-                </div>
-                <div className="flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[16px]">speed</span>
-                  <span>Advanced</span>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <article
-            className="bg-surface-container-lowest rounded-xl overflow-hidden card-shadow hover-lift cursor-pointer flex flex-col h-full"
-          >
-            <div className="relative h-64 w-full">
-              <img
-                className="w-full h-full object-cover"
-                data-alt="A vibrant, close-up photograph of a rustic galette filled with seasonal berries, featuring a golden, flaky crust. The tart sits on a piece of crinkled parchment paper atop a clean, warm-toned stone surface. Gentle, diffused light emphasizes the glossy fruit and the artisanal texture of the pastry, capturing a sophisticated, minimalist culinary style."
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoAi-CizBXJo28cB5z3U0FxZjGM3m3UGkGlKhgYlHn_TzJginSx67TXDztDxvQiYoYa7V4vWjzUVqsTtGjd-EjlxUy6Iz69yESRkPVB1Utee2ZJf8MhWs0n0DI6XtQZUZGf6Dx0As4cz9YWqGgvWOiRhqgyK_O-ftQRUugr81GMOxMHfXqwQo2VB3d-oT0VGNwJdOeRgiuIqhiHsX9uCnk6fwS2jdOfeK9YnmKBA1mGwnsGN3tXWWH9MdQoGluahJ18gTI9acl_L8" />
-              <button
-                className="absolute top-sm right-sm w-10 h-10 bg-surface-container-lowest/80 backdrop-blur-sm rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
-              >
-                <span className="material-symbols-outlined">favorite</span>
-              </button>
-            </div>
-            <div className="p-md flex flex-col flex-grow">
-              <div className="flex justify-between items-start mb-sm">
-                <span
-                  className="font-label-sm text-label-sm text-secondary uppercase tracking-wider"
-                >Pastry</span>
-                <div className="flex items-center gap-xs text-on-surface-variant">
-                  <span
-                    className="material-symbols-outlined text-[16px]"
-                    style={{ fontVariationSettings: '"FILL" 1' }}
-                  >star</span>
-                  <span className="font-label-sm text-label-sm">4.8</span>
-                </div>
-              </div>
-              <h3
-                className="font-headline-sm text-headline-sm text-on-background mb-sm line-clamp-2"
-              >
-                Rustic Mixed Berry Galette
-              </h3>
-              <div
-                className="mt-auto flex items-center gap-md text-on-surface-variant font-label-sm text-label-sm"
-              >
-                <div className="flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[16px]"
-                  >schedule</span>
-                  <span>1h 15m</span>
-                </div>
-                <div className="flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[16px]">speed</span>
-                  <span>Medium</span>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <article
-            className="bg-surface-container-lowest rounded-xl overflow-hidden card-shadow hover-lift cursor-pointer flex flex-col h-full"
-          >
-            <div className="relative h-64 w-full">
-              <img
-                className="w-full h-full object-cover"
-                data-alt="A high-end food photograph of delicate, pale green pistachio macarons stacked neatly on a pristine white ceramic plate. The background is a soft, out-of-focus cream color with a hint of warm sunlight casting gentle shadows. The composition is clean, airy, and minimalist, emphasizing the precise craftsmanship of the pastries."
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvSD8or9W5k7OLQcgxnVUBTyXv1JFSsIJ5ihk1x48A9tNorZKgo3LOTDJeY_Q4mnfbzw7HwFDDyzgS0iEHoiCO3Hec-hABQxdeVt85aB3HRcq67TEC4XcJPDOVeUJMCwQhE7mU4HvZ2x7Fyos_fPcNs7q8uWFkiyBm9_zCHR3EkUhMEgibv1x4S_d9czZLHg_0d8QDllxaPRjiIo9v__FerYGzCjoDDehI6VNeJtrXusOH5OqyHyuwodzPXcjyJpk8VmsvXIk05tc" />
-              <button
-                className="absolute top-sm right-sm w-10 h-10 bg-surface-container-lowest/80 backdrop-blur-sm rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
-              >
-                <span className="material-symbols-outlined">favorite</span>
-              </button>
-            </div>
-            <div className="p-md flex flex-col flex-grow">
-              <div className="flex justify-between items-start mb-sm">
-                <span
-                  className="font-label-sm text-label-sm text-primary uppercase tracking-wider"
-                >Dessert</span>
-                <div className="flex items-center gap-xs text-on-surface-variant">
-                  <span
-                    className="material-symbols-outlined text-[16px]"
-                    style={{ fontVariationSettings: '"FILL" 1' }}
-                  >star</span>
-                  <span className="font-label-sm text-label-sm">5.0</span>
-                </div>
-              </div>
-              <h3
-                className="font-headline-sm text-headline-sm text-on-background mb-sm line-clamp-2"
-              >
-                Pistachio &amp; Rosewater Macarons
-              </h3>
-              <div
-                className="mt-auto flex items-center gap-md text-on-surface-variant font-label-sm text-label-sm"
-              >
-                <div className="flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[16px]"
-                  >schedule</span>
-                  <span>2h 30m</span>
-                </div>
-                <div className="flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[16px]">speed</span>
-                  <span>Advanced</span>
-                </div>
-              </div>
-            </div>
-          </article>
-        </section>
-      </main>
-
-      <nav
-        className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-margin-mobile py-2 bg-surface dark:bg-surface-container border-t border-outline-variant shadow-lg rounded-t-xl"
-      >
-        <a
-          className="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-variant p-2 rounded-xl transition-all duration-150 active:scale-90"
-          href="#"
-        >
-          <span className="material-symbols-outlined mb-xs text-[24px]">home</span>
-          <span className="font-label-sm text-label-sm-mobile">Home</span>
-        </a>
-        <a
-          className="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-variant p-2 rounded-xl transition-all duration-150 active:scale-90"
-          href="#"
-        >
-          <span className="material-symbols-outlined mb-xs text-[24px]"
-          >rss_feed</span>
-          <span className="font-label-sm text-label-sm-mobile">Feed</span>
-        </a>
-        <a
-          className="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-variant p-2 rounded-xl transition-all duration-150 active:scale-90"
-          href="#"
-        >
-          <span className="material-symbols-outlined mb-xs text-[24px]"
-          >add_circle</span>
-          <span className="font-label-sm text-label-sm-mobile">Create</span>
-        </a>
-        <a
-          className="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-variant p-2 rounded-xl transition-all duration-150 active:scale-90"
-          href="#"
-        >
-          <span className="material-symbols-outlined mb-xs text-[24px]"
-          >menu_book</span>
-          <span className="font-label-sm text-label-sm-mobile">Cookbooks</span>
-        </a>
-        <a
-          className="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full p-2 transition-all duration-150 active:scale-90 w-16"
-          href="#"
-        >
-          <span
-            className="material-symbols-outlined mb-xs text-[24px]"
-            style={{ fontVariationSettings: '"FILL" 1' }}
-          >person</span>
-          <span className="font-label-sm text-label-sm-mobile">Profile</span>
-        </a>
-      </nav><Footer />
-    </body>
     </>
   )
 }

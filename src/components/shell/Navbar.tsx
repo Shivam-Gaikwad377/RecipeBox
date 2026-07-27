@@ -6,7 +6,7 @@ const Navbar = () => {
             className="w-full top-0 sticky bg-surface  shadow-sm z-50"
         >
             <div
-                className="flex justify-between items-center px-margin-desktop py-4 max-w-7xl mx-auto"
+                className="flex justify-between items-center px-margin-desktop py-4  mx-auto"
             >
 
                 <div
@@ -15,21 +15,18 @@ const Navbar = () => {
                     RecipeBox
                 </div>
 
-                <div className="flex-1 max-w-xl mx-md hidden md:block">
+                <div className="flex-1  mx-md hidden md:block">
                     <div className="relative relative-input">
                         <span
                             className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline"
                         >search</span>
                         <input
-                            className="w-full bg-transparent border-b border-outline focus:border-primary focus:ring-0 px-12 py-3 rounded-t-lg transition-colors font-body-md text-body-md peer"
+                            className=" w-full bg-surface-container-lowest border pl-10 border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                             id="global-search"
                             placeholder=" "
                             type="text"
                         />
-                        <label
-                            className="absolute left-12 top-1/2 -translate-y-1/2 text-outline transition-all duration-200 pointer-events-none font-label-md text-label-md"
-                            htmlFor="global-search"
-                        >Search ingredients, recipes...</label>
+
                     </div>
                 </div>
 

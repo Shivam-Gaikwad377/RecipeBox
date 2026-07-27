@@ -98,6 +98,7 @@ export const authOptions: NextAuthOptions = {
         session.user.plan = token.plan;
         session.user.name = token.name;
         session.user.businessName = token.businessName;
+        session.user.username = token.username;
       }
       return session;
     },
