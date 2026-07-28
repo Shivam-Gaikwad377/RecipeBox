@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]/options";
+import { authOptions } from "../../../auth/[...nextauth]/options";
 import { connectToDatabase } from "@/lib/dbConfig";
 import { Follow } from "@/models/following.model";
 import { User } from "@/models/user.model"; // adjust to your actual path
 import ApiResponse from "@/types/ApiResponse";
 
 const DUPLICATE_KEY_ERROR = 11000;
-
-export async function POST(request: Request) {
+type paramsType = { params: Promise<{ id: string }> };
+export async function POST(request: Request, { params }: paramsType) {
   try {
     const session = await getServerSession(authOptions);
     const followerId = session?.user?.data?._id;
@@ -23,10 +23,10 @@ export async function POST(request: Request) {
 
     let followingId: unknown;
     try {
-      ({ followingId } = await request.json());
+      followingId = (await params).id;
     } catch {
       return NextResponse.json<ApiResponse>(
-        { success: false, message: "Invalid request body" },
+        { success: false, message: "Invalid following ID" },
         { status: 400 }
       );
     }
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE(request: Request, { params }: paramsType) {
   try {
     const session = await getServerSession(authOptions);
     const followerId = session?.user?.data?._id;
@@ -97,17 +97,25 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const body = await request.json().catch(() => null);
-    const followingId = body?.followingId;
-
-    if (!followingId || !isValidObjectId(followingId)) {
+    let followingId: string;
+    try {
+      followingId = (await params).id;
+    } catch {
       return NextResponse.json<ApiResponse>(
         { success: false, message: "Invalid following ID" },
         { status: 400 }
       );
     }
 
-    if (followingId === followerId) {
+    if (!followingId || !isValidObjectId(followingId)) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, message: "Invalid following ID format" },
+        { status: 400 }
+      );
+    }
+
+    // FIX: Cast both to String to prevent ObjectId vs String strict equality failure
+    if (String(followingId) === String(followerId)) {
       return NextResponse.json<ApiResponse>(
         { success: false, message: "You cannot unfollow yourself" },
         { status: 400 }
