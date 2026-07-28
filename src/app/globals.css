@@ -321,6 +321,18 @@ h3,
   .contributor-chip {
     @apply inline-flex items-center gap-2 bg-surface-container rounded-full pr-3 pl-1 py-1;
   }
+  .card-shadow {
+    box-shadow: 0 4px 20px rgba(45, 41, 38, 0.04);
+  }
+  .hover-lift {
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(45, 41, 38, 0.08);
+  }
 }
 
 /* @theme inline {
