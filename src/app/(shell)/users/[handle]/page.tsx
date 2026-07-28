@@ -1,11 +1,73 @@
+"use client"
 import React from 'react'
-
+import { useState, useEffect } from "react"
+import RecipeCard from "@/components/RecipeCard"
+import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { toast } from "sonner"
+import axios from "axios"
+import { UserDocument } from '@/models/user.model'
+import ApiResponse from '@/types/ApiResponse'
 const page = () => {
+    const [profileData, setProfileData] = useState<UserDocument | null>(null);
+    const pathname = usePathname();
+    const username = pathname.split("/").pop(); // Extract the username from the URL
+    const { data: session } = useSession();
+    const [followerCount, setFollowerCount] = useState<number>(0);
+    const [followingCount, setFollowingCount] = useState<number>(0);
+    const router = useRouter();
+    useEffect(() => {
+        if (session?.user?.data?.username === username) {
+            // Redirect to the user's own profile page or dashboard
+            router.push("/profile");
+        }
+
+        const fetchProfileData = async () => {
+
+            try {
+                const response = await axios.get<ApiResponse>(`/api/profile/${username}`);
+                setProfileData(response?.data?.data);
+            } catch (error) {
+                toast.error("Failed to fetch profile data");
+                console.error("Error fetching profile data:", error);
+            }
+        }
+
+            ;
+
+        fetchProfileData();
+    }, [username]);
+
+    useEffect(() => {
+        const fetchFollowerCount = async () => {
+            if (!profileData?._id) return;
+            try {
+                const response = await axios.get<ApiResponse>(`/api/users/${profileData?._id}/followers`);
+                setFollowerCount(response.data.data.count);
+            } catch (error) {
+                console.error(error, "Failed to fetch follower count.");
+            }
+        };
+
+        const fetchFollowingCount = async () => {
+            if (!profileData?._id) return;
+            try {
+                const response = await axios.get<ApiResponse>(`/api/users/${profileData?._id}/following`);
+                setFollowingCount(response.data.data.count);
+            } catch (error) {
+                console.error(error, "Failed to fetch following count.");
+            }
+        };
+
+        fetchFollowerCount();
+        fetchFollowingCount();
+    }, [profileData?._id]);
+
     return (
         <main
-            className="max-w-7xl mx-auto px-margin-mobile pt-md md:px-margin-desktop  "
+            className=" mx-auto px-margin-mobile pt-md md:px-margin-desktop  "
         >
-          
+
             <section className="flex flex-col items-center text-center  mb-xl">
                 <div
                     className="w-32 h-32 rounded-full overflow-hidden mb-md shadow-md border-4 border-surface-container-lowest"
@@ -13,22 +75,18 @@ const page = () => {
                     <img
                         className="w-full h-full object-cover"
                         data-alt="A highly detailed close-up portrait of an inviting, modern chef or food enthusiast in a warmly lit kitchen environment. The subject has a friendly expression, soft natural lighting highlights their features against a slightly blurred, bright minimalist background featuring soft cream and sage green tones. High-end food lifestyle photography aesthetic."
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYBlxoEFIeSxb8XpVkNRTF9B9XlE-tkeN1FlQo4uXMTyD3M10AnO4lTFZlJZgOPWleY7MFCKCZGqDUgqqYuNfHOkhb4c2O1V5c6PvLNOBLu1EPXPnbI_z_nWwS8Z5SZCdmrrKkRWysqNtzhr4n-h29a_6rTsXGm0bCoYePXAjdu_scH1hu9FIhFgiJW1xB1p8Vyz7bORvsQkGNxyq8kBvcaWMvuPKK43FCkQ8XDgkjsvuhaGM_g4YSM3E8Ym1Kn3GE1ffHD8fMGwI"
-                    />
+                        src={profileData?.avatar?.avatarUrl} />
                 </div>
                 <h1 className="font-headline-md text-headline-md text-on-background mb-xs">
-                    Eleanor Vance
+                    {profileData?.name || "Eleanor Vance"}
                 </h1>
                 <p className="font-body-md text-body-md text-on-surface-variant mb-md">
-                    @eleanorcooks • Artisan Baker &amp; Pastry Enthusiast
+                    @{profileData?.username || "eleanorcooks"}
                 </p>
                 <p
                     className="font-body-md text-body-md text-tertiary-container max-w-2xl mx-auto mb-lg"
                 >
-                    Exploring the delicate balance between rustic charm and refined
-                    technique. Believer in slow fermentation, seasonal fruits, and finding
-                    joy in the process. Creating a communal epicurean space one loaf at a
-                    time.
+                    {profileData?.bio || "No Bio available."}
                 </p>
                 <button
                     className="bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md py-3 px-8 rounded-full transition-all duration-200 active:scale-95 shadow-sm mb-lg"
@@ -40,28 +98,28 @@ const page = () => {
                 >
                     <div className="flex flex-col items-center">
                         <span className="font-headline-sm text-headline-sm text-on-background"
-                        >142</span>
+                        >{0}</span>
                         <span
                             className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-xs"
                         >Recipes</span>
                     </div>
                     <div className="flex flex-col items-center">
                         <span className="font-headline-sm text-headline-sm text-on-background"
-                        >12.4k</span>
+                        >{followerCount}</span>
                         <span
                             className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-xs"
                         >Followers</span>
                     </div>
                     <div className="flex flex-col items-center">
                         <span className="font-headline-sm text-headline-sm text-on-background"
-                        >328</span>
+                        >{followingCount}</span>
                         <span
                             className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-xs"
                         >Following</span>
                     </div>
                 </div>
             </section>
-         
+
             <section className="mb-lg">
                 <div className="flex gap-lg border-b border-surface-variant">
                     <button
@@ -81,11 +139,11 @@ const page = () => {
                     </button>
                 </div>
             </section>
-          
+
             <section
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter"
             >
-                
+
                 <article
                     className="bg-surface-container-lowest rounded-xl overflow-hidden card-shadow hover-lift cursor-pointer flex flex-col h-full"
                 >
@@ -134,7 +192,7 @@ const page = () => {
                         </div>
                     </div>
                 </article>
-               
+
                 <article
                     className="bg-surface-container-lowest rounded-xl overflow-hidden card-shadow hover-lift cursor-pointer flex flex-col h-full"
                 >
@@ -183,7 +241,7 @@ const page = () => {
                         </div>
                     </div>
                 </article>
-              
+
                 <article
                     className="bg-surface-container-lowest rounded-xl overflow-hidden card-shadow hover-lift cursor-pointer flex flex-col h-full"
                 >
