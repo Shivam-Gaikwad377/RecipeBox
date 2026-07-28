@@ -1,4 +1,4 @@
-import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
+import mongoose, { HydratedDocument, Schema, type InferSchemaType, type Model,  } from "mongoose";
 import { required } from "zod/mini";
 
 const userSchema = new Schema(
@@ -60,8 +60,11 @@ const userSchema = new Schema(
   },
   { timestamps: true }
 );
+// Base schema type (NO _id, NO .save())
+type User = InferSchemaType<typeof userSchema>; 
 
-export type UserDocument = InferSchemaType<typeof userSchema>;
+// Full document type (HAS _id, HAS .save())
+export type UserDocument = HydratedDocument<User>;
 
 export const User: Model<UserDocument> =
   mongoose.models.User || mongoose.model("User", userSchema);

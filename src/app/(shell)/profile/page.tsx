@@ -16,7 +16,7 @@ import {
 } from "@/schemas/updateProfile.schema";
 import useDebounce from "@/hooks/useDebouncedValue";
 import { Spinner } from "@/components/Spinner";
-import { signOut } from "next-auth/react";
+
 
 // --- constants -------------------------------------------------------------
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5MB
@@ -45,7 +45,8 @@ const ProfilePage = () => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const [followerCount, setFollowerCount] = useState<number>(0);
+  const [followingCount, setFollowingCount] = useState<number>(0);
   const form = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
@@ -219,7 +220,28 @@ const ProfilePage = () => {
 
   const isSaveDisabled =
     isSubmitting || usernameStatus === "checking" || usernameStatus === "taken";
+  useEffect(() => {
+    const fetchFollowerCount = async () => {
+      try {
+        const response = await axios.get<ApiResponse>(`/api/users/${userData?._id}/followers`);
+        setFollowerCount(response.data.data.count);
+      } catch (error) {
+        console.error(getErrorMessage(error, "Failed to fetch follower count."));
+      }
+    };
 
+    const fetchFollowingCount = async () => {
+      try {
+        const response = await axios.get<ApiResponse>(`/api/users/${userData?._id}/following`);
+        setFollowingCount(response.data.data.count);
+      } catch (error) {
+        console.error(getErrorMessage(error, "Failed to fetch following count."));
+      }
+    };
+
+    fetchFollowerCount();
+    fetchFollowingCount();
+  }, [userData?._id]);
   return (
     <>
       <section className="col-span-4 md:col-span-12 flex flex-col md:flex-row items-center md:items-start gap-lg mb-xl mt-lg">
@@ -273,7 +295,7 @@ const ProfilePage = () => {
             </div>
             <div className="flex flex-col items-center md:items-start">
               <span className="text-label-md text-on-surface">
-                {0}
+                {followerCount}
               </span>
               <span className="font-label-sm text-label-sm text-on-surface-variant">
                 Followers
@@ -281,7 +303,7 @@ const ProfilePage = () => {
             </div>
             <div className="flex flex-col items-center md:items-start">
               <span className="text-label-md text-on-surface">
-                {0}
+                {followingCount}
               </span>
               <span className="font-label-sm text-label-sm text-on-surface-variant">
                 Following
