@@ -12,13 +12,7 @@ export async function GET(
 ) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?._id) {
-            return NextResponse.json<ApiResponse>(
-                { success: false, message: "Unauthorized" },
-                { status: 401 }
-            );
-        }
-
+        
         const { id } = await params;
 
         await connectToDatabase();

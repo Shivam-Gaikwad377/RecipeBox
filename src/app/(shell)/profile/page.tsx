@@ -222,6 +222,7 @@ const ProfilePage = () => {
     isSubmitting || usernameStatus === "checking" || usernameStatus === "taken";
   useEffect(() => {
     const fetchFollowerCount = async () => {
+      if(!userData?._id) return;
       try {
         const response = await axios.get<ApiResponse>(`/api/users/${userData?._id}/followers`);
         setFollowerCount(response.data.data.count);
@@ -231,6 +232,7 @@ const ProfilePage = () => {
     };
 
     const fetchFollowingCount = async () => {
+      if(!userData?._id) return;
       try {
         const response = await axios.get<ApiResponse>(`/api/users/${userData?._id}/following`);
         setFollowingCount(response.data.data.count);
