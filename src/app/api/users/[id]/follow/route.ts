@@ -12,7 +12,7 @@ type paramsType = { params: Promise<{ id: string }> };
 export async function POST(request: Request, { params }: paramsType) {
   try {
     const session = await getServerSession(authOptions);
-    const followerId = session?.user?.data?._id;
+    const followerId = session?.user?._id;
 
     if (!followerId) {
       return NextResponse.json<ApiResponse>(

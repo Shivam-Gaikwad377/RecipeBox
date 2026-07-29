@@ -16,6 +16,8 @@ const page = () => {
     const [followerCount, setFollowerCount] = useState<number>(0);
     const [followingCount, setFollowingCount] = useState<number>(0);
     const router = useRouter();
+    const [isFollowing, setIsFollowing] = useState<boolean>(false);
+
     useEffect(() => {
         if (session?.user?.data?.username === username) {
             // Redirect to the user's own profile page or dashboard
@@ -62,7 +64,26 @@ const page = () => {
         fetchFollowerCount();
         fetchFollowingCount();
     }, [profileData?._id]);
-
+    useEffect(() => {
+        const fetchFollowStatus = async () => {
+            if (!profileData?._id || !session?.user?._id) return;
+            try {
+                const response = await axios.get<ApiResponse>(`/api/users/${profileData?._id}/follow/${session?.user?._id}`);
+                setIsFollowing(response.data.data.isFollowing);
+            } catch (error) {
+                console.error(error, "Failed to fetch follow status.");
+            }
+        }
+        fetchFollowStatus();
+    }, [profileData?._id, session?.user?._id]);
+    const handleFollow = async () => {
+        if (!session?.user?._id) {
+            toast.error("You must be logged in to follow users.");
+            return;
+        }
+        const response = await axios.post<ApiResponse>(`/api/users/${profileData?._id}/follow`);
+        setIsFollowing(true);
+    };
     return (
         <main
             className=" mx-auto px-margin-mobile pt-md md:px-margin-desktop  "
@@ -89,9 +110,10 @@ const page = () => {
                     {profileData?.bio || "No Bio available."}
                 </p>
                 <button
+                    onClick={handleFollow}
                     className="bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md py-3 px-8 rounded-full transition-all duration-200 active:scale-95 shadow-sm mb-lg"
                 >
-                    Follow
+                    {isFollowing ? "Unfollow" : "Follow"}
                 </button>
                 <div
                     className="flex justify-center gap-xl w-full max-w-lg border-t border-b border-surface-variant py-md"
