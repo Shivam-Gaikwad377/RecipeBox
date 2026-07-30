@@ -35,5 +35,10 @@ export const recipeSchema = z.object({
     servings: z.number().min(1, "Servings must be at least 1"),
     difficulty: z.enum(["Easy", "Medium", "Hard"], "Difficulty must be one of 'Easy', 'Medium', or 'Hard'"),
     tags: z.array(z.string().max(30, "Tag cannot exceed 30 characters")).optional(),
-    
+
 });
+
+export type  Ingredient = z.infer<typeof ingredientsSchema>;
+export type Instruction = z.infer<typeof instructionsSchema>;
+export type NutritionalInfo = z.infer<typeof nutritionalInfoSchema>;
+export type Recipe = z.infer<typeof recipeSchema>;
