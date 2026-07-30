@@ -16,9 +16,11 @@ import {
 } from "@/schemas/updateProfile.schema";
 import useDebounce from "@/hooks/useDebouncedValue";
 import { Spinner } from "@/components/Spinner";
+import { getErrorMessage } from "@/helpers/getErrorMessage";
+import PrimaryButton from "@/components/PrimaryButton";
+import SecondaryButton from "@/components/SecondaryButton";
 
 
-// --- constants -------------------------------------------------------------
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const DEFAULT_AVATAR = "/default-avatar.png"; // ship a real static fallback at this path
@@ -26,15 +28,7 @@ const USERNAME_CHECK_DEBOUNCE_MS = 500;
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "error";
 
-// --- helpers -----------------------------------------------------------------
-// Centralizes error extraction so real backend messages (validation errors,
-// "username taken", etc.) reach the user instead of a generic toast every time.
-function getErrorMessage(error: unknown, fallback: string): string {
-  if (axios.isAxiosError(error)) {
-    return (error.response?.data as ApiResponse | undefined)?.message ?? fallback;
-  }
-  return fallback;
-}
+
 
 const ProfilePage = () => {
   const router = useRouter();
@@ -222,9 +216,9 @@ const ProfilePage = () => {
     isSubmitting || usernameStatus === "checking" || usernameStatus === "taken";
   useEffect(() => {
     const fetchFollowerCount = async () => {
-      if(!userData?._id) return;
+      if (!userData?._id) return;
       try {
-        const response = await axios.get<ApiResponse>(`/api/users/${userData?._id}/followers`);
+        const response = await axios.get<ApiResponse>(`/api/users/${userData?._id.toString()}/followers`);
         setFollowerCount(response.data.data.count);
       } catch (error) {
         console.error(getErrorMessage(error, "Failed to fetch follower count."));
@@ -232,9 +226,9 @@ const ProfilePage = () => {
     };
 
     const fetchFollowingCount = async () => {
-      if(!userData?._id) return;
+      if (!userData?._id) return;
       try {
-        const response = await axios.get<ApiResponse>(`/api/users/${userData?._id}/following`);
+        const response = await axios.get<ApiResponse>(`/api/users/${userData?._id.toString()}/following`);
         setFollowingCount(response.data.data.count);
       } catch (error) {
         console.error(getErrorMessage(error, "Failed to fetch following count."));
@@ -312,14 +306,14 @@ const ProfilePage = () => {
               </span>
             </div>
           </div>
-          <button
-            type="button"
+          <SecondaryButton
+            icon="edit"
+            label="Edit Profile"
             onClick={() => setIsEditing(true)}
-            className="px-md py-sm rounded-full border-2 border-primary text-primary text-label-md hover:bg-primary-fixed transition-colors hover-lift flex items-center gap-xs bg-surface-container-lowest"
-          >
-            <span className="material-symbols-outlined text-[18px]">edit</span>
-            Edit Profile Details
-          </button>
+            fontSize="medium"
+
+
+          />
         </div>
       </section>
 
@@ -471,24 +465,25 @@ const ProfilePage = () => {
               </div>
 
               <div className="flex w-full justify-end gap-sm">
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="px-md py-sm rounded-full border-2 border-primary text-primary text-label-md hover:bg-primary-fixed transition-colors hover-lift flex items-center gap-xs bg-surface-container-lowest"
-                >
-                  <span className="material-symbols-outlined text-[18px]">cancel</span>
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaveDisabled}
-                  className="px-md bg-primary text-on-primary text-label-md py-sm rounded-full hover:bg-primary-container hover-lift transition-all shadow-sm flex items-center justify-center gap-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    check_circle
-                  </span>
-                  {isSubmitting ? (<Spinner />) : "Save Changes"}
-                </button>
+                <SecondaryButton
+                  icon="cancel"
+                  label="Cancel"
+                  onClick={() => {
+                    reset();
+                    setIsEditing(false);
+                  }}
+                  fontSize="medium"
+
+                />
+                <PrimaryButton
+                  label={isSubmitting ? <Spinner /> : "Save Changes"}
+                  onClick={handleSubmit(onSubmit)}
+                  icon={isSubmitting ? null : "check_circle"}
+                  fontSize="medium"
+                />
+
+
+
               </div>
             </form>
           </section>
@@ -512,7 +507,7 @@ const ProfilePage = () => {
         </section>
 
 
-       
+
       </div>
     </>
   );

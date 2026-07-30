@@ -8,6 +8,9 @@ import { toast } from "sonner"
 import axios from "axios"
 import { UserDocument } from '@/models/user.model'
 import ApiResponse from '@/types/ApiResponse'
+import SecondaryBUtton from '@/components/SecondaryButton'
+import PrimaryButton from '@/components/PrimaryButton'
+import SecondaryButton from '@/components/SecondaryButton'
 const page = () => {
     const [profileData, setProfileData] = useState<UserDocument | null>(null);
     const pathname = usePathname();
@@ -109,12 +112,21 @@ const page = () => {
                 >
                     {profileData?.bio || "No Bio available."}
                 </p>
-                <button
-                    onClick={handleFollow}
-                    className="bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md py-3 px-8 rounded-full transition-all duration-200 active:scale-95 shadow-sm mb-lg"
-                >
-                    {isFollowing ? "Unfollow" : "Follow"}
-                </button>
+                {isFollowing ? (
+                    <SecondaryButton
+                        label="Unfollow"
+                        icon={undefined}
+                        fontSize="large"
+                        onClick={() => { }}
+                    />
+                ) : (
+                    <PrimaryButton
+                        label="Follow"
+                        icon={undefined}
+                        fontSize="large"
+                        onClick={handleFollow}
+                    />
+                )}
                 <div
                     className="flex justify-center gap-xl w-full max-w-lg border-t border-b border-surface-variant py-md"
                 >

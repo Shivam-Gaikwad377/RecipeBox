@@ -1,19 +1,22 @@
-// route for getting the follower count of a user through params id
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../../auth/[...nextauth]/options";
+import { isValidObjectId } from "mongoose";
 import { connectToDatabase } from "@/lib/dbConfig";
 import { Follow } from "@/models/following.model";
 import ApiResponse from "@/types/ApiResponse";
 
 export async function GET(
     req: Request,
-    { params }: { params: Promise<{ id: string }> } // Next 15: params is async
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await getServerSession(authOptions);
-        
         const { id } = await params;
+
+        if (!isValidObjectId(id)) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid user id" },
+                { status: 400 }
+            );
+        }
 
         await connectToDatabase();
         const followerCount = await Follow.countDocuments({ following: id });
