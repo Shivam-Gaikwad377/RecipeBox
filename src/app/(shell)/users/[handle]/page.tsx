@@ -8,7 +8,7 @@ import { toast } from "sonner"
 import axios from "axios"
 import { UserDocument } from '@/models/user.model'
 import ApiResponse from '@/types/ApiResponse'
-import SecondaryBUtton from '@/components/SecondaryButton'
+
 import PrimaryButton from '@/components/PrimaryButton'
 import SecondaryButton from '@/components/SecondaryButton'
 const page = () => {
@@ -87,6 +87,15 @@ const page = () => {
         const response = await axios.post<ApiResponse>(`/api/users/${profileData?._id}/follow`);
         setIsFollowing(true);
     };
+    const handleUnfollow = async () => {
+        if (!session?.user?._id) {
+            toast.error("You must be logged in to unfollow users.");
+            return;
+        }
+        const response = await axios.delete<ApiResponse>(`/api/users/${profileData?._id}/follow`);
+        setIsFollowing(false);
+    }
+
     return (
         <main
             className=" mx-auto px-margin-mobile pt-md md:px-margin-desktop  "
@@ -117,7 +126,7 @@ const page = () => {
                         label="Unfollow"
                         icon={undefined}
                         fontSize="large"
-                        onClick={() => { }}
+                        onClick={handleUnfollow}
                     />
                 ) : (
                     <PrimaryButton
@@ -193,7 +202,7 @@ const page = () => {
                             <span className="material-symbols-outlined">favorite</span>
                         </button>
                     </div>
-                    <div className="p-md flex flex-col flex-grow">
+                    <div className="p-md flex flex-col grow">
                         <div className="flex justify-between items-start mb-sm">
                             <span
                                 className="font-label-sm text-label-sm text-primary uppercase tracking-wider"
@@ -291,7 +300,7 @@ const page = () => {
                             <span className="material-symbols-outlined">favorite</span>
                         </button>
                     </div>
-                    <div className="p-md flex flex-col flex-grow">
+                    <div className="p-md flex flex-col grow">
                         <div className="flex justify-between items-start mb-sm">
                             <span
                                 className="font-label-sm text-label-sm text-primary uppercase tracking-wider"
