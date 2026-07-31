@@ -7,7 +7,7 @@ import { Recipe } from "@/models/recipe.model";
 import ApiResponse from "@/types/ApiResponse";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-    try{
+    try {
         const recipeId = (await params).id;
         if (!isValidObjectId(recipeId)) {
             return NextResponse.json<ApiResponse>(
@@ -40,4 +40,42 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             { status: 500 }
         );
     }
+}
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+    try {
+        const recipeId = (await params).id;
+        if (!isValidObjectId(recipeId)) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid recipe ID" },
+                { status: 400 }
+            );
+        }
+
+        const deletedRecipe = await Recipe.findByIdAndDelete(recipeId);
+
+        if (!deletedRecipe) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Recipe not found" },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json<ApiResponse>(
+            {
+                success: true,
+                message: "Recipe deleted successfully",
+                data: deletedRecipe,
+            },
+            { status: 200 }
+        );
+    }
+    catch (error: unknown) {
+        console.error("Error deleting recipe:", error);
+        return NextResponse.json<ApiResponse>(
+            { success: false, message: "Failed to delete recipe" },
+            { status: 500 }
+        );
+    }
+
 }
