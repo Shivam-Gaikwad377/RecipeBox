@@ -10,8 +10,7 @@ type paramsType = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, {params}: paramsType) {
   try {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?._id;
+    const userId = (await params).id;
     if (!isValidObjectId(userId)) {
       return NextResponse.json<ApiResponse>(
         { success: false, message: "Invalid user ID" },
@@ -40,3 +39,4 @@ export async function GET(request: Request, {params}: paramsType) {
     );
   }
 }
+
