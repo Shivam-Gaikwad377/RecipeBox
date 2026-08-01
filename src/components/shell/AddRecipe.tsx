@@ -87,8 +87,8 @@ const AddRecipe = () => {
         }
     }
     const onInvalid = (errors: FieldErrors<Recipe>) => {
-    console.error("Validation failed:", errors)
-}
+        console.error("Validation failed:", errors)
+    }
     return (
         <form noValidate onSubmit={handleSubmit(onSubmit, onInvalid)}>
             <main className="max-w-7xl mx-auto px-margin-desktop py-md">
@@ -263,7 +263,7 @@ const AddRecipe = () => {
 
                             <section className="recipe-card p-md">
                                 <h3 className="font-label-md text-label-md text-on-surface mb-4">Recipe Details</h3>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-4">
                                     <div className="bg-surface-container-low p-3 rounded-lg">
                                         <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1">Prep Time</label>
                                         <div className="flex items-center gap-2">
@@ -296,6 +296,25 @@ const AddRecipe = () => {
                                             )}
                                         </div>
                                     </div>
+                                    <div className="bg-surface-container-low p-3 rounded-lg">
+                                        <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1" htmlFor="difficulty">
+                                            Difficulty
+                                        </label>
+                                        <select
+                                            id="difficulty"
+                                            className="form-input-text"
+                                            {...register("difficulty")}
+                                        >
+                                            <option value="Easy">Easy</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="Hard">Hard</option>
+                                        </select>
+                                        {errors.difficulty && (
+                                            <p className="mt-2 font-label-sm text-label-sm text-error">
+                                                {errors.difficulty.message}
+                                            </p>
+                                        )}
+                                    </div>
                                     <div className="bg-surface-container-low p-3 rounded-lg col-span-2">
                                         <label className="font-label-sm text-label-sm text-on-surface-variant block mb-2">Servings</label>
                                         <div className="flex items-center justify-between">
@@ -321,18 +340,26 @@ const AddRecipe = () => {
 
                             <section className="recipe-card p-md">
                                 <h3 className="font-label-md text-label-md text-on-surface mb-4">Tags</h3>
-                                <input
-                                    className="form-input-text mb-4"
-                                    placeholder="Add tags (e.g. Vegan, Dessert)"
-                                    value={tagDraft}
-                                    onChange={(e) => setTagDraft(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            e.preventDefault() // stop Enter from submitting the whole form
-                                            addTag()
-                                        }
-                                    }}
-                                />
+                                <div className="flex gap-2 mb-4">
+                                    <input
+                                        className="form-input-text grow"
+                                        placeholder="Add tags (e.g. Vegan, Dessert)"
+                                        value={tagDraft}
+                                        onChange={(e) => setTagDraft(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault()
+                                                addTag()
+                                            }
+                                        }}
+                                    />
+                                    <SecondaryButton
+                                        onClick={addTag}
+                                        label="Add"
+                                        icon=""
+                                        fontSize="small"
+                                    />
+                                </div>
                                 <div className="flex flex-wrap gap-2">
                                     {tags.map((tag) => (
                                         <span
