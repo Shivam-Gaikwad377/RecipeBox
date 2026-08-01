@@ -142,47 +142,51 @@ const AddRecipe = () => {
                             <h2 className="font-headline-sm text-headline-sm text-on-surface mb-6">Ingredients</h2>
                             <div className="flex flex-col gap-sm mb-6">
                                 {ingredientFields.map((field, index) => (
-                                    <div
-                                        key={field.id}
-                                        className="flex items-center gap-sm bg-surface-container-low p-2 rounded-lg group hover:bg-surface-container transition-colors"
-                                    >
-                                        <span className="material-symbols-outlined text-outline-variant group-hover:text-tertiary cursor-move">
-                                            drag_indicator
-                                        </span>
-                                        <input
-                                            className="form-input-text grow"
-                                            placeholder="Ingredient (e.g. Flour)"
-                                            {...register(`ingredients.${index}.name`)}
-                                        />
-                                        {errors.ingredients?.[index]?.name && (
-                                            <p className="mt-2 font-label-sm text-label-sm text-error">
-                                                {errors.ingredients[index]?.name?.message}
-                                            </p>
-                                        )}
-                                        <input
-                                            className="form-input-text w-24"
-                                            placeholder="Qty"
-                                            type="number"
-                                            step="any"
-                                            {...register(`ingredients.${index}.quantity`, { valueAsNumber: true })}
-                                        />
-                                        {errors.ingredients?.[index]?.quantity && (
-                                            <p className="mt-2 font-label-sm text-label-sm text-error">
-                                                {errors.ingredients[index]?.quantity?.message}
-                                            </p>
-                                        )}
-                                        <select className="form-input-text w-32" {...register(`ingredients.${index}.unit`)}>
-                                            <option value="cups">Cups</option>
-                                            <option value="tbsp">Tbsp</option>
-                                            <option value="g">Grams</option>
-                                        </select>
-                                        <button
-                                            type="button"
-                                            onClick={() => removeIngredient(index)}
-                                            className="p-2 text-outline-variant hover:text-error transition-colors rounded-full hover:bg-surface-bright"
+
+                                    <div key={field.id} className="flex items-center gap-sm group">
+                                        <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-md text-label-md">
+                                            {index + 1}
+                                        </div>
+                                        <div
+                                            key={field.id}
+                                            className="flex items-center gap-sm bg-surface-container-low p-2 rounded-lg group hover:bg-surface-container transition-colors"
                                         >
-                                            <span className="material-symbols-outlined">delete</span>
-                                        </button>
+
+                                            <input
+                                                className="form-input-text grow"
+                                                placeholder="Ingredient (e.g. Flour)"
+                                                {...register(`ingredients.${index}.name`)}
+                                            />
+                                            {errors.ingredients?.[index]?.name && (
+                                                <p className="mt-2 font-label-sm text-label-sm text-error">
+                                                    {errors.ingredients[index]?.name?.message}
+                                                </p>
+                                            )}
+                                            <input
+                                                className="form-input-text w-24"
+                                                placeholder="Qty"
+                                                type="number"
+                                                step="any"
+                                                {...register(`ingredients.${index}.quantity`, { valueAsNumber: true })}
+                                            />
+                                            {errors.ingredients?.[index]?.quantity && (
+                                                <p className="mt-2 font-label-sm text-label-sm text-error">
+                                                    {errors.ingredients[index]?.quantity?.message}
+                                                </p>
+                                            )}
+                                            <select className="form-input-text w-32 pr-4" {...register(`ingredients.${index}.unit`)}>
+                                                <option value="cups">Cups</option>
+                                                <option value="tbsp">Tbsp</option>
+                                                <option value="g">Grams</option>
+                                            </select>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeIngredient(index)}
+                                                className="p-2 text-outline-variant hover:text-error transition-colors rounded-full aspect-square items-center flex hover:bg-surface-bright"
+                                            >
+                                                <span className="material-symbols-outlined">delete</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -201,7 +205,7 @@ const AddRecipe = () => {
                                 {instructionFields.map((field, index) => (
                                     <div key={field.id} className="flex gap-sm group">
                                         <div className="flex flex-col items-center pt-2 gap-1">
-                                            <span className="material-symbols-outlined text-outline-variant cursor-move">drag_indicator</span>
+
                                             <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-md text-label-md">
                                                 {index + 1}
                                             </div>
@@ -264,12 +268,13 @@ const AddRecipe = () => {
                             <section className="recipe-card p-md">
                                 <h3 className="font-label-md text-label-md text-on-surface mb-4">Recipe Details</h3>
                                 <div className="grid grid-cols-3 gap-4">
-                                    <div className="bg-surface-container-low p-3 rounded-lg">
+                                    <div className="bg-surface-container-low p-3 flex flex-col gap-xs items-center rounded-lg">
                                         <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1">Prep Time</label>
                                         <div className="flex items-center gap-2">
                                             <input
-                                                className="form-input-text py-1 px-2 w-16"
+                                                className="form-input-number  px-2 w-16"
                                                 type="number"
+                                                placeholder="0"
                                                 {...register("prepTime", { valueAsNumber: true })}
                                             />
                                             <span className="font-body-md text-body-md">min</span>
@@ -280,12 +285,13 @@ const AddRecipe = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="bg-surface-container-low p-3 rounded-lg">
+                                    <div className="bg-surface-container-low p-3 items-center flex flex-col  gap-xs rounded-lg">
                                         <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1">Cook Time</label>
                                         <div className="flex items-center gap-2">
                                             <input
-                                                className="form-input-text py-1 px-2 w-16"
+                                                className="form-input-number px-2 w-16"
                                                 type="number"
+                                                placeholder="0"
                                                 {...register("cookTime", { valueAsNumber: true })}
                                             />
                                             <span className="font-body-md text-body-md">min</span>
@@ -296,7 +302,7 @@ const AddRecipe = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="bg-surface-container-low p-3 rounded-lg">
+                                    <div className="bg-surface-container-low p-3 items-center flex flex-col gap-xs rounded-lg">
                                         <label className="font-label-sm text-label-sm text-on-surface-variant block mb-1" htmlFor="difficulty">
                                             Difficulty
                                         </label>
@@ -382,7 +388,7 @@ const AddRecipe = () => {
                                         <div className="flex justify-between border-b items-center border-outline-variant pb-1">
                                             <span>Calories</span>
                                             <input
-                                                className="form-input-text w-16 py-2!"
+                                                className="form-input-text w-24 py-2!"
                                                 type="number"
                                                 {...register("nutritionalInfo.calories", { valueAsNumber: true })}
                                             />
@@ -390,14 +396,14 @@ const AddRecipe = () => {
                                         <div className="flex justify-between border-b items-center border-outline-variant pb-1">
                                             <span>Protein</span>
                                             <input
-                                                className="form-input-text w-16 py-2!"
+                                                className="form-input-text w-24 py-2!"
                                                 type="number"
                                                 {...register("nutritionalInfo.protein", { valueAsNumber: true })}
                                             />
                                         </div><div className="flex justify-between border-b items-center border-outline-variant pb-1">
                                             <span>Fats</span>
                                             <input
-                                                className="form-input-text w-16 py-2!"
+                                                className="form-input-text w-24 py-2!"
                                                 type="number"
                                                 {...register("nutritionalInfo.fat", { valueAsNumber: true })}
                                             />
@@ -405,7 +411,7 @@ const AddRecipe = () => {
                                         <div className="flex justify-between border-b items-center border-outline-variant pb-1">
                                             <span>Carbs</span>
                                             <input
-                                                className="form-input-text w-16 py-2!"
+                                                className="form-input-text w-24 py-2!"
                                                 type="number"
                                                 {...register("nutritionalInfo.carbs", { valueAsNumber: true })}
                                             />
