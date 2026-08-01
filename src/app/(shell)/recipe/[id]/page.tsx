@@ -1,8 +1,32 @@
+"use client"
 import React from 'react'
 import PrimaryButton from '@/components/PrimaryButton'
 import SecondaryButton from '@/components/SecondaryButton'
-
+import { RecipeDocument } from "@/models/recipe.model";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import ApiResponse from "   @/types/ApiResponse";
+import axios from "axios";
 const page = () => {
+    const [recipe, setRecipe] = useState<RecipeDocument | null>(null);
+    const pathname = usePathname();
+    const id = pathname.split("/").pop(); // Extract the recipe ID from the URL
+
+    useEffect(() => {
+        const fetchRecipe = async () => {
+            try {
+                
+                const response = await axios.get<ApiResponse>(`/api/recipe/${id}`);
+                setRecipe(response?.data?.data);
+            } catch (error) {
+                console.error("Error fetching recipe:", error);
+            }
+        };
+
+        fetchRecipe();
+    }, []);
+console.log("Recipe data:", recipe); // Log the recipe data to the console
     return (
         <main
             className="w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop pt-6 md:pt-12 pb-xl"  >
