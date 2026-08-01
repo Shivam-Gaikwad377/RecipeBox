@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { useForm, useFieldArray, type SubmitHandler } from "react-hook-form"
+import { useForm, useFieldArray, type SubmitHandler, FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import PrimaryButton from "@/components/PrimaryButton"
 import SecondaryButton from "@/components/SecondaryButton"
@@ -33,7 +33,8 @@ const AddRecipe = () => {
             cookTime: 0,
             servings: 4,
             tags: [],
-            nutritionalInfo: { calories: 0, protein: 0 },
+            nutritionalInfo: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+            difficulty: "Easy",
         },
     })
 
@@ -75,19 +76,21 @@ const AddRecipe = () => {
     }
 
     const onSubmit: SubmitHandler<Recipe> = async (data: Recipe) => {
-        try{
-            const response = await axios.post("/api/recipes", data)
+        try {
+            const response = await axios.post("/api/recipe", data)
             if (response.status === 200) {
                 toast.success("Recipe added successfully!")
             }
-            
-        }catch(error: any){
+
+        } catch (error: any) {
             toast.error(`Failed to add recipe: ${error.message}`)
         }
     }
-
+    const onInvalid = (errors: FieldErrors<Recipe>) => {
+    console.error("Validation failed:", errors)
+}
     return (
-        <form  noValidate>
+        <form noValidate onSubmit={handleSubmit(onSubmit, onInvalid)}>
             <main className="max-w-7xl mx-auto px-margin-desktop py-md">
                 <div className="mb-lg">
                     <h1 className="font-display-lg text-display-lg text-on-surface">Add Recipe</h1>
@@ -167,7 +170,7 @@ const AddRecipe = () => {
                                             <p className="mt-2 font-label-sm text-label-sm text-error">
                                                 {errors.ingredients[index]?.quantity?.message}
                                             </p>
-                                        )   }
+                                        )}
                                         <select className="form-input-text w-32" {...register(`ingredients.${index}.unit`)}>
                                             <option value="cups">Cups</option>
                                             <option value="tbsp">Tbsp</option>
@@ -270,7 +273,11 @@ const AddRecipe = () => {
                                                 {...register("prepTime", { valueAsNumber: true })}
                                             />
                                             <span className="font-body-md text-body-md">min</span>
-                                            
+                                            {errors.prepTime && (
+                                                <p className="mt-2 font-label-sm text-label-sm text-error">
+                                                    {errors.prepTime.message}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="bg-surface-container-low p-3 rounded-lg">
@@ -282,6 +289,11 @@ const AddRecipe = () => {
                                                 {...register("cookTime", { valueAsNumber: true })}
                                             />
                                             <span className="font-body-md text-body-md">min</span>
+                                            {errors.cookTime && (
+                                                <p className="mt-2 font-label-sm text-label-sm text-error">
+                                                    {errors.cookTime.message}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="bg-surface-container-low p-3 rounded-lg col-span-2">
@@ -331,6 +343,7 @@ const AddRecipe = () => {
                                             {tag}
                                             <span className="material-symbols-outlined text-[14px]">close</span>
                                         </span>
+
                                     ))}
                                 </div>
                             </section>
@@ -354,6 +367,21 @@ const AddRecipe = () => {
                                                 type="number"
                                                 {...register("nutritionalInfo.protein", { valueAsNumber: true })}
                                             />
+                                        </div><div className="flex justify-between border-b items-center border-outline-variant pb-1">
+                                            <span>Fats</span>
+                                            <input
+                                                className="form-input-text w-16 py-2!"
+                                                type="number"
+                                                {...register("nutritionalInfo.fat", { valueAsNumber: true })}
+                                            />
+                                        </div>
+                                        <div className="flex justify-between border-b items-center border-outline-variant pb-1">
+                                            <span>Carbs</span>
+                                            <input
+                                                className="form-input-text w-16 py-2!"
+                                                type="number"
+                                                {...register("nutritionalInfo.carbs", { valueAsNumber: true })}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -365,7 +393,7 @@ const AddRecipe = () => {
                                     label={isSubmitting ? "Saving..." : "Save Recipe"}
                                     icon=""
                                     fontSize="medium"
-                                    onClick={handleSubmit(onSubmit)}
+                                    type="submit"
                                     disabled={isSubmitting}
                                 />
                             </div>

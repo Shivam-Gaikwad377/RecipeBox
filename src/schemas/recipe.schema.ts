@@ -41,7 +41,7 @@ export const recipeSchema = z.object({
     servings: z.number().min(1, "Servings must be at least 1"),
     difficulty: z.enum(["Easy", "Medium", "Hard"], {
         message: "Difficulty must be one of 'Easy', 'Medium', or 'Hard'",
-    }),
+    }).optional(),
     tags: z.array(z.string().trim().max(30, "Tag cannot exceed 30 characters"))
         .max(20, "Cannot exceed 20 tags")
         .optional(),

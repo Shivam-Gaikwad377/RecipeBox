@@ -11,12 +11,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?._id;
-    if (!isValidObjectId(userId)) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, message: "Invalid user ID" },
-        { status: 400 }
-      );
-    }
+    
     if (!userId) {
       return NextResponse.json<ApiResponse>(
         { success: false, message: "You must be logged in to create a recipe" },
@@ -33,7 +28,7 @@ export async function POST(request: Request) {
         .join(", ");
       return NextResponse.json<ApiResponse>(
         { success: false, message: `Validation failed: ${errorMessages}` },
-        { status: 400 }
+        { status: 403 }
       );
     }
 
