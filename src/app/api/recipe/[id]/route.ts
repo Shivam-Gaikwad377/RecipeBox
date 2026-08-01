@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         }
         await connectToDatabase();
 
-        const recipe = await Recipe.findOne({ _id: recipeId }).populate("author", "name email");
+        const recipe = await Recipe.findOne({ _id: recipeId }).populate("author");
 
         if (!recipe) {
             return NextResponse.json<ApiResponse>(

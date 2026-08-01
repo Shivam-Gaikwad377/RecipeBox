@@ -6,19 +6,22 @@ import { RecipeDocument } from "@/models/recipe.model";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
-import ApiResponse from "   @/types/ApiResponse";
+import ApiResponse from "@/types/ApiResponse";
 import axios from "axios";
+import { UserDocument } from '@/models/user.model';
 const page = () => {
     const [recipe, setRecipe] = useState<RecipeDocument | null>(null);
     const pathname = usePathname();
     const id = pathname.split("/").pop(); // Extract the recipe ID from the URL
-
+    const [author, setAuthor] = useState<UserDocument | null>(null);
+    const [followers, setFollowers] = useState<UserDocument[] | null>(null);
     useEffect(() => {
         const fetchRecipe = async () => {
             try {
-                
+
                 const response = await axios.get<ApiResponse>(`/api/recipe/${id}`);
                 setRecipe(response?.data?.data);
+                setAuthor(response?.data?.data?.author);
             } catch (error) {
                 console.error("Error fetching recipe:", error);
             }
@@ -26,7 +29,21 @@ const page = () => {
 
         fetchRecipe();
     }, []);
-console.log("Recipe data:", recipe); // Log the recipe data to the console
+    useEffect(() => {
+        const fetchFollowers = async () => {
+            try {
+                if (recipe && author) {
+                    const response = await axios.get<ApiResponse>(`/api/user/${author?._id}/followers`);
+                    setFollowers(response.data.data.count);
+                }
+            } catch (error) {
+                console.error("Error fetching followers:", error);
+            }
+        }
+        fetchFollowers();
+    }, [recipe])
+
+    console.log("Recipe data:", recipe); // Log the recipe data to the console
     return (
         <main
             className="w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop pt-6 md:pt-12 pb-xl"  >
@@ -36,13 +53,13 @@ console.log("Recipe data:", recipe); // Log the recipe data to the console
                     <img
                         className="w-full h-full object-cover"
                         data-alt="A high-fidelity, professional food photography shot of a whole charred lemon and herb roast chicken on a rustic wooden board, garnished with fresh rosemary and roasted lemon halves, soft natural lighting, gourmet kitchen setting, 8k resolution, appetizing and premium."
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4wNTOnvkJ0eImXJVneHgrcT2iW2sntr--H3VFAnm0aCAYDI9Qqrf36gdJQi5DIWhGLtvrH-kri2INSI3fRxFRmDjed9NZ5nTeZ0_elWb6wYshgGlcHdx6DCgfTnZBDN3D8wNoi6CBnf7lxH79og0Hyfj63_nGjOqZ-J6lKKj4Mm0DCC0C4_Qbmis3yf2mHCz8eNmu-UzOrsUs9epSdRGEqyTBy9q3qNgkAxupjPW25J3vfXg_PY7u"
+                        src={recipe?.coverImage?.coverImageURL}
                     />
                 </div>
                 <div className="p-6 md:p-8">
                     <h1
                         className="text-display-lg-mobile md:text-display-lg font-display-lg text-on-surface mb-4" >
-                        Charred lemon and herb roast chicken
+                        {recipe?.title}
                     </h1>
                     <div
                         className="flex flex-wrap items-center gap-6 text-on-surface-variant text-label-sm font-label-sm mb-8"  >
@@ -50,19 +67,19 @@ console.log("Recipe data:", recipe); // Log the recipe data to the console
                             <span
                                 className="material-symbols-outlined text-[18px]"
                                 data-icon="schedule">schedule</span>
-                            <span className="">25 min prep</span>
+                            <span className="">{recipe?.prepTime} min prep</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span
                                 className="material-symbols-outlined text-[18px]"
                                 data-icon="local_fire_department">local_fire_department</span>
-                            <span className="">55 min cook</span>
+                            <span className="">{recipe?.cookTime} min cook</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span
                                 className="material-symbols-outlined text-[18px]"
                                 data-icon="bar_chart">bar_chart</span>
-                            <span className="">Medium</span>
+                            <span className="">{recipe?.difficulty}</span>
                         </div>
 
 
@@ -74,14 +91,14 @@ console.log("Recipe data:", recipe); // Log the recipe data to the console
                             <img
                                 alt="Rhea Sen"
                                 className="w-12 h-12 rounded-full"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_oj7FutsZ7XBnk7VkRxa6vAkCQmtGzCRkybxERafwuW0OL2dJVgcDTM7ESIo_W6rPc3RoyZ_j0s_2TClc30Xrvkz9JlMU2yXM3QMHRfAmoL7u9mVoa46K3DlNlhhEFCIn70X0xrdKO0gFcV03M4-YRxN-Q6MStwbjH4tQIjQngSAUpD3vhDZ9_YEu1Ufy8NPdJGnmRkoeSPs7hsEyHwQelirjXPuPzOHvqItdIPz6yW9hEuF1eBs9"
+                                src={author?.avatar?.avatarUrl}
                             />
                             <div>
                                 <p className="font-body-md font-semibold text-on-surface">
-                                    Rhea Sen
+                                    {author?.name}
                                 </p>
                                 <p className="text-label-sm font-label-sm text-on-surface-variant">
-                                    1.2k followers
+                                    {followers} followers
                                 </p>
                             </div>
                             <button
