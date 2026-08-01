@@ -3,7 +3,7 @@ import React from "react";
 type FontSize = "small" | "medium" | "large";
 
 type SecondaryButtonProps = {
-  onClick: () => void;
+  onClick?: () => void;
   label: string;
   icon?: string;
   fontSize?: FontSize;
