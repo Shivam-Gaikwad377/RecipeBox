@@ -44,6 +44,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const session = await getServerSession(authOptions);
+        const userId = session?.user?._id;
+        if(!userId) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "You must be logged in to delete a recipe" },
+                { status: 401 }
+            );
+        }
         const recipeId = (await params).id;
         if (!isValidObjectId(recipeId)) {
             return NextResponse.json<ApiResponse>(
@@ -52,11 +60,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
             );
         }
 
-        const deletedRecipe = await Recipe.findByIdAndDelete(recipeId);
+        await connectToDatabase();
+
+        const deletedRecipe = await Recipe.findOneAndDelete({ _id: recipeId, author: userId });
 
         if (!deletedRecipe) {
             return NextResponse.json<ApiResponse>(
-                { success: false, message: "Recipe not found" },
+                { success: false, message: "Recipe not found or you are not authorized to delete it" },
                 { status: 404 }
             );
         }
@@ -69,13 +79,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
             },
             { status: 200 }
         );
-    }
-    catch (error: unknown) {
+    } catch (error: unknown) {
         console.error("Error deleting recipe:", error);
         return NextResponse.json<ApiResponse>(
             { success: false, message: "Failed to delete recipe" },
             { status: 500 }
         );
     }
-
 }
+
+
