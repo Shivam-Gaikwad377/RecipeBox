@@ -19,9 +19,9 @@ export const nutritionalInfoSchema = z.object({
     fat: z.number().min(0, "Fat cannot be negative").optional(),
 });
 
-export const imageSchema = z.object({
-    imageUrl: z.string().url("Invalid image URL").optional(),
-    imageField: z.string().optional(),
+export const coverImageSchema = z.object({
+    coverImageURL: z.string().url("Invalid image URL").optional(),
+    coverImageFileId: z.string().optional(),
 });
 
 export const recipeSchema = z.object({
@@ -35,7 +35,7 @@ export const recipeSchema = z.object({
         .min(1, "At least one instruction is required")
         .max(100, "Cannot exceed 100 instructions"),
     nutritionalInfo: nutritionalInfoSchema.optional(),
-    image: imageSchema.optional(),
+    coverImage: coverImageSchema.optional(),
     cookTime: z.number().min(0, "Cook time cannot be negative"),
     prepTime: z.number().min(0, "Prep time cannot be negative"),
     servings: z.number().min(1, "Servings must be at least 1"),
@@ -50,5 +50,5 @@ export const recipeSchema = z.object({
 export type Ingredient = z.infer<typeof ingredientsSchema>;
 export type Instruction = z.infer<typeof instructionsSchema>;
 export type NutritionalInfo = z.infer<typeof nutritionalInfoSchema>;
-export type Image = z.infer<typeof imageSchema>;
+export type CoverImage = z.infer<typeof coverImageSchema>;
 export type Recipe = z.infer<typeof recipeSchema>;

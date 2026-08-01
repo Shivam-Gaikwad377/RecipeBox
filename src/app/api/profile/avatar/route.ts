@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest) {
 
     await connectToDatabase();
 
-    // 3. Delete old avatar from ImageKit if it exists
+    
     const existingUser = await User.findById(userId);
     if (!existingUser) {
       return NextResponse.json<ApiResponse>(
@@ -44,17 +44,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    if (existingUser?.avatar?.avatarFileId) {
-      try {
-        await imagekitClient.deleteFile(existingUser.avatar.avatarFileId);
-      } catch (deleteError) {
-        // Log the error but don't halt execution if the file is already gone
-        console.error(
-          "Failed to delete old avatar from ImageKit:",
-          deleteError
-        );
-      }
-    }
+   
 
     // 4. Convert File to Buffer
     const buffer = Buffer.from(await (file as File).arrayBuffer());
@@ -67,6 +57,18 @@ export async function PATCH(req: NextRequest) {
       useUniqueFileName: true,
     });
 
+     if ((existingUser?.avatar?.avatarFileId) && result.fileId !== existingUser.avatar.avatarFileId) {
+      try {
+        await imagekitClient.deleteFile(existingUser.avatar.avatarFileId);
+      } catch (deleteError) {
+        // Log the error but don't halt execution if the file is already gone
+        console.error(
+          "Failed to delete old avatar from ImageKit:",
+          deleteError
+        );
+      }
+    }
+
     // 6. Save URL to MongoDB
     const updatedUser = await User.findByIdAndUpdate(
       userId,
@@ -78,6 +80,8 @@ export async function PATCH(req: NextRequest) {
       },
       { new: true }
     );
+
+
 
     return NextResponse.json<ApiResponse>(
       {

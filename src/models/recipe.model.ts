@@ -69,13 +69,13 @@ const recipeSchema = new Schema(
       trim: true,
       maxlength: 2000,
     },
-    image: {
-      imageUrl: {
+    coverImage: {
+      coverImageURL: {
         type: String,
         default:
           "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y",
       },
-      imageFileId: {
+      coverImageFileId: {
         type: String,
       },
     },

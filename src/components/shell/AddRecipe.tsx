@@ -8,6 +8,7 @@ import SecondaryButton from "@/components/SecondaryButton"
 import { recipeSchema, type Recipe } from "@/schemas/recipe.schema"
 import axios from "axios"
 import { toast } from "sonner"
+import ApiResponse from "@/types/ApiResponse"
 const TITLE_MAX_LENGTH = 150
 
 // ⚠️ placeholder shapes — align these to your actual Ingredient/Instruction
@@ -53,7 +54,7 @@ const AddRecipe = () => {
     const title = watch("title") ?? ""
     const servings = watch("servings") ?? 1
     const tags = watch("tags") ?? []
-    const coverImageFiles = watch("image")
+    const coverImageFiles = watch("coverImage") ?? null
 
     const [tagDraft, setTagDraft] = useState("")
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -74,7 +75,31 @@ const AddRecipe = () => {
             { shouldValidate: true }
         )
     }
+    const handleCoverImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
+        const formData = new FormData();
+        formData.append("coverImage", file); // key must match server's uploadData.get("coverImage")
+
+        try {
+            const response = await axios.post<ApiResponse>(
+                "/api/recipe/upload-cover",
+                formData
+            ); // no headers object — let axios/browser generate multipart boundary itself
+
+            if (response.data.success) {
+                setValue("coverImage", {
+                    coverImageURL: response.data.data.url,
+                    coverImageFileId: response.data.data.fileId,
+                }, { shouldValidate: true });
+                setPreviewUrl(response.data.data.url);
+            }
+        } catch (err) {
+            console.error("Cover image upload failed:", err);
+            // surface this to the user — silently failing on catch means they think it worked
+        }
+    };
     const onSubmit: SubmitHandler<Recipe> = async (data: Recipe) => {
         try {
             const response = await axios.post("/api/recipe", data)
@@ -252,7 +277,7 @@ const AddRecipe = () => {
                                     className="aspect-video bg-surface-container-low border-2 border-dashed border-outline-variant m-4 rounded-lg flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer group overflow-hidden"
                                     style={previewUrl ? { backgroundImage: `url(${previewUrl})`, backgroundSize: "cover" } : undefined}
                                 >
-                                    {/* {!previewUrl && (
+                                    {!previewUrl && (
                                         <>
                                             <div className="w-12 h-12 rounded-full bg-surface-bright flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                                                 <span className="material-symbols-outlined text-primary">add_a_photo</span>
@@ -260,9 +285,9 @@ const AddRecipe = () => {
                                             <span className="font-label-md text-label-md">Upload Cover Image</span>
                                             <span className="font-label-sm text-label-sm text-outline mt-1">16:9 ratio recommended</span>
                                         </>
-                                    )} */}
+                                    )}
                                 </label>
-                                {/* <input id="coverImage" type="file" accept="image/*" className="hidden" {...register("image")} /> */}
+                                <input id="coverImage" type="file" className="hidden" onChange={handleCoverImageChange} />
                             </section>
 
                             <section className="recipe-card p-md">
