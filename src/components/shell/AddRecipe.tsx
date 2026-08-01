@@ -36,6 +36,7 @@ const AddRecipe = () => {
             tags: [],
             nutritionalInfo: { calories: 0, protein: 0, fat: 0, carbs: 0 },
             difficulty: "Easy",
+            coverImage: { coverImageURL: "", coverImageFileId: "" },
         },
     })
 
@@ -90,10 +91,12 @@ const AddRecipe = () => {
 
             if (response.data.success) {
                 setValue("coverImage", {
-                    coverImageURL: response.data.data.url,
-                    coverImageFileId: response.data.data.fileId,
+                    coverImageURL: response.data.data.coverImage.url,
+                    coverImageFileId: response.data.data.coverImage.fileId,
                 }, { shouldValidate: true });
-                setPreviewUrl(response.data.data.url);
+                setPreviewUrl(response.data.data.coverImage.url);
+                console.log("Cover image uploaded successfully:", response.data.data.coverImage);
+                
             }
         } catch (err) {
             console.error("Cover image upload failed:", err);

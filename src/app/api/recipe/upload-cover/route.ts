@@ -49,8 +49,10 @@ export async function POST(req: NextRequest) {
                 success: true,
                 message: "Cover image uploaded successfully",
                 data: {
-                    url: result.url,
-                    fileId: result.fileId,
+                    coverImage: {
+                        url: result.url,
+                        fileId: result.fileId,
+                    },
                 },
             },
             { status: 200 }
