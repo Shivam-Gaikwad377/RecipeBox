@@ -22,6 +22,7 @@ const AddRecipe = () => {
         handleSubmit,
         watch,
         setValue,
+        getValues,
         formState: { errors, isSubmitting },
     } = useForm<Recipe>({
         resolver: zodResolver(recipeSchema),
@@ -76,31 +77,33 @@ const AddRecipe = () => {
             { shouldValidate: true }
         )
     }
+    const [isUploadingCover, setIsUploadingCover] = useState(false);
+
     const handleCoverImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        const previousFileId = getValues("coverImage.coverImageFileId"); // read-at-call-time, not a stale watch() closure
+
         const formData = new FormData();
-        formData.append("coverImage", file); // key must match server's uploadData.get("coverImage")
+        formData.append("coverImage", file);
+        if (previousFileId) formData.append("previousFileId", previousFileId);
 
+        setIsUploadingCover(true);
         try {
-            const response = await axios.post<ApiResponse>(
-                "/api/recipe/upload-cover",
-                formData
-            ); // no headers object — let axios/browser generate multipart boundary itself
-
+            const response = await axios.post<ApiResponse>("/api/recipe/upload-cover", formData);
             if (response.data.success) {
                 setValue("coverImage", {
                     coverImageURL: response.data.data.coverImage.url,
                     coverImageFileId: response.data.data.coverImage.fileId,
                 }, { shouldValidate: true });
                 setPreviewUrl(response.data.data.coverImage.url);
-                console.log("Cover image uploaded successfully:", response.data.data.coverImage);
-                
             }
         } catch (err) {
             console.error("Cover image upload failed:", err);
-            // surface this to the user — silently failing on catch means they think it worked
+            toast.error("Failed to upload cover image");
+        } finally {
+            setIsUploadingCover(false);
         }
     };
     const onSubmit: SubmitHandler<Recipe> = async (data: Recipe) => {

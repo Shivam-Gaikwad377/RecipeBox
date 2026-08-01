@@ -2,11 +2,11 @@ import { NextResponse, NextRequest } from "next/server";
 import { connectToDatabase } from "@/lib/dbConfig";
 import { Recipe } from "@/models/recipe.model";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/options";
+import { authOptions } from "../../../auth/[...nextauth]/options";
 import { getImageKitClient } from "@/lib/imagekit";
 import ApiResponse from "@/types/ApiResponse";
 
-export async function POST(req: NextRequest) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
     try {
         // Instantiate ImageKit inside the handler (prevents build-time missing key error)
         const imagekitClient = getImageKitClient();
@@ -23,7 +23,6 @@ export async function POST(req: NextRequest) {
 
         // 2. Get the file from the request
         const uploadData = await req.formData();
-        const previousFileId = uploadData.get("previousFileId") as string | null;
         const file = uploadData.get("coverImage");
         if (typeof file === "string" || !file) {
             return NextResponse.json<ApiResponse>(
@@ -33,6 +32,16 @@ export async function POST(req: NextRequest) {
         }
 
         await connectToDatabase();
+
+        const recipeId = (await params.id);
+
+        const recipe = await Recipe.findOne({ _id: recipeId, author: userId });
+        if (!recipe) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Recipe not found or you are not the author" },
+                { status: 404 }
+            );
+        }
 
         // 3. Convert File to Buffer
         const buffer = Buffer.from(await (file as File).arrayBuffer());
@@ -44,17 +53,33 @@ export async function POST(req: NextRequest) {
             folder: "/recipe-covers",
             useUniqueFileName: true,
         });
-        if (previousFileId) {
-            // don't let a delete failure fail the whole request — log it, sweep later
-            await imagekitClient.deleteFile(previousFileId).catch((err) =>
-                console.error(`Orphan cleanup failed for ${previousFileId}:`, err)
+        // 5. Save first — DB is the source of truth, ImageKit cleanup happens after
+        const oldFileId = recipe.coverImage?.coverImageFileId;
+
+        recipe.coverImage = {
+            coverImageURL: result.url,
+            coverImageFileId: result.fileId,
+        };
+
+        try {
+            await recipe.save();
+        } catch (saveError) {
+            // save failed — the NEW upload is now orphaned, not the old one. Clean it up.
+            await imagekitClient.deleteFile(result.fileId).catch(() => { });
+            throw saveError; // let the outer catch return the 500
+        }
+
+        // only delete the old file once the new one is confirmed persisted
+        if (oldFileId && oldFileId !== result.fileId) {
+            await imagekitClient.deleteFile(oldFileId).catch((err) =>
+                console.error("Failed to delete old cover image:", err)
             );
         }
 
         return NextResponse.json<ApiResponse>(
             {
                 success: true,
-                message: "Cover image uploaded successfully",
+                message: "Cover image uploaded and recipe updated successfully",
                 data: {
                     coverImage: {
                         url: result.url,
@@ -73,4 +98,3 @@ export async function POST(req: NextRequest) {
         );
     }
 }
-
