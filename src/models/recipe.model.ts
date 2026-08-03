@@ -1,4 +1,4 @@
-import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
+import mongoose, { model, models, Schema, Types, type InferSchemaType, type Model } from "mongoose";
 
 const ingredientSchema = new Schema(
   {
@@ -153,7 +153,11 @@ recipeSchema.index(
 recipeSchema.index({ author: 1, createdAt: -1 });
 recipeSchema.index({ tags: 1, difficulty: 1, prepTime: 1, cookTime: 1 });
 
-export type RecipeDocument = InferSchemaType<typeof recipeSchema>;
+export type RecipeDocument = InferSchemaType<typeof recipeSchema> & {
+  _id: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export const Recipe: Model<RecipeDocument> =
-  mongoose.models.Recipe || mongoose.model("Recipe", recipeSchema);
+  models.Recipe || model<RecipeDocument>("Recipe", recipeSchema);

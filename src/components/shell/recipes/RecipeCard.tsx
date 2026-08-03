@@ -1,14 +1,14 @@
 import React from 'react'
 
-type RecipeCardProps = {
+type RecipeCardProps1 = {
     title: string;
-    imageUrl: string;
+    imageUrl: string | undefined;
     rating: number;
     reviewCount: number;
     cookTime: string;
-    difficulty: string;
+    difficulty: "Easy" | "Medium" | "Hard";
 };
-const RecipeCard = ({ title, imageUrl, rating, reviewCount, cookTime, difficulty }: RecipeCardProps) => {
+const RecipeCard = ({ title, imageUrl, rating, reviewCount, cookTime, difficulty }: RecipeCardProps1) => {
     return (
         <article className="group bg-surface-container-lowest rounded-xl recipe-card-shadow overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
             <div className="relative aspect-4/3 overflow-hidden">

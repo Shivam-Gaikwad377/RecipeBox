@@ -10,13 +10,14 @@ import ApiResponse from "@/types/ApiResponse";
 import axios from "axios";
 import Image from 'next/image';
 import { UserDocument } from '@/models/user.model';
-
+import RecipeCard from '@/components/shell/recipes/RecipeCard';
 const page = () => {
     const [recipe, setRecipe] = useState<RecipeDocument | null>(null);
     const pathname = usePathname();
     const id = pathname.split("/").pop(); // Extract the recipe ID from the URL
     const [author, setAuthor] = useState<UserDocument | null>(null);
     const [followers, setFollowers] = useState<number>(0);
+    const [moreRecipes, setMoreRecipes] = useState<RecipeDocument[]>([]);
     useEffect(() => {
         const fetchRecipe = async () => {
             try {
@@ -318,68 +319,17 @@ const page = () => {
 
             <section>
                 <h2 className="text-headline-sm font-headline-sm text-on-surface mb-6">
-                    More from Rhea
+                    More from {author?.name}
                 </h2>
                 <div
                     className="flex overflow-x-auto gap-6 pb-4 scroll-hide -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0"
                 >
 
-                    <div
-                        className="shrink-0 w-64 rounded-xl border border-outline-variant/30 overflow-hidden bg-surface-container-lowest group cursor-pointer hover:shadow-md transition-shadow"
-                    >
-                        <div className="h-40 bg-surface-variant relative">
-                            <img
-                                className="w-full h-full object-cover"
-                                data-alt="A close up shot of garlic butter shrimp in a cast iron skillet, garnished with fresh parsley and a slice of lemon. Warm lighting, rustic background, appetizing food photography."
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdgxA28fg4-6ZCIDblm9AU--nPBFetxF2s2iB5OxVzln3OuSYsQj70YTJKn9eokKNzVfsy6NaXjE9HvQgegg2AJclBPx0SJDRHnwlLSSPPeavu8wKeDckpH1kI7pFAMCXB9Mil5HwnOgaYtjSyPej989ZgpZGD-9pSecCj0kI554iLbiurBeoqYpNsx6y15tg6WgbcVB6SIZ1SJp7Dl76azCcIgTMiymlYABtUIQdjMuffZ4Wr0oPi"
-                            />
-                        </div>
-                        <div className="p-4">
-                            <h3
-                                className="font-label-md text-on-surface group-hover:text-primary transition-colors"
-                            >
-                                Garlic butter shrimp
-                            </h3>
-                        </div>
-                    </div>
-
-                    <div
-                        className="shrink-0 w-64 rounded-xl border border-outline-variant/30 overflow-hidden bg-surface-container-lowest group cursor-pointer hover:shadow-md transition-shadow"
-                    >
-                        <div className="h-40 bg-surface-variant relative">
-                            <img
-                                className="w-full h-full object-cover"
-                                data-alt="A beautifully plated miso glazed salmon fillet on a bed of steamed white rice, sprinkled with sesame seeds and green onions. Clean, minimalist styling, bright lighting."
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEwOFx3lxbG4mAVjWh-VMHbe7D8AeEvo2TzO1rwZC1rzelGo46kKgxjb-KuJ6QFXlWxNgY0ixly5w-DtBpSRbtlOWQ2huuGl1vwI9ow497QrxKp4EuZPwxsvgTDxKd0tjUrPzEPhn7hOwY02ylT7PR3ucVxg2_zFm6kg9fj02Go9vOSwXuV8H11RBhKLK3LdoMWQIzspMGK1idzutI367f_Utqdo8E9-YYxdTBLhg6gS7-aKWDE2Rr"
-                            />
-                        </div>
-                        <div className="p-4">
-                            <h3
-                                className="font-label-md text-on-surface group-hover:text-primary transition-colors"
-                            >
-                                Miso glazed salmon
-                            </h3>
-                        </div>
-                    </div>
-
-                    <div
-                        className="shrink-0 w-64 rounded-xl border border-outline-variant/30 overflow-hidden bg-surface-container-lowest group cursor-pointer hover:shadow-md transition-shadow"
-                    >
-                        <div className="h-40 bg-surface-variant relative">
-                            <img
-                                className="w-full h-full object-cover"
-                                data-alt="A vibrant roasted vegetable bowl featuring sweet potatoes, broccoli, chickpeas, and a creamy tahini dressing drizzle. Served in a shallow ceramic bowl on a wooden table. Healthy, fresh, bright food photography."
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA91Zh70WvzOX2U9fPyQIxoXl7lTCQ3qLlH7zaH_iQNp0bOEhiIMQT4wLR6HVREy2GefXUpNB5Z7Ett1pJULP074eN1__NPpHe35uD_M0zwTeQ24B_pYEodCECZaSrz-5C8cDKrICogUPn_TaquTKDwJ-bGKX_Hop1s6_RSl1pDHFXZlHA98wBeW6dVZINVnBMGqG0V2DpmljG1T4LPzE3zH4FhWhZGP5D4RHwIDD4Jcf4cXvpLrmB6"
-                            />
-                        </div>
-                        <div className="p-4">
-                            <h3
-                                className="font-label-md text-on-surface group-hover:text-primary transition-colors"
-                            >
-                                Roasted veg bowl
-                            </h3>
-                        </div>
-                    </div>
+                    {
+                        moreRecipes.map((recipe) => (
+                            <RecipeCard key={recipe?._id.toString()} title={recipe.title} rating={4.5} imageUrl={recipe?.coverImage?.coverImageURL} reviewCount={120} cookTime={`${recipe?.cookTime} min`} difficulty={recipe?.difficulty} />
+                        ))
+                    }
                 </div>
             </section>
         </main>
