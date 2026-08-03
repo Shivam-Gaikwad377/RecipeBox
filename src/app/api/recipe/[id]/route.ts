@@ -5,7 +5,7 @@ import { authOptions } from "../../auth/[...nextauth]/options";
 import { connectToDatabase } from "@/lib/dbConfig";
 import { Recipe } from "@/models/recipe.model";
 import ApiResponse from "@/types/ApiResponse";
-
+import { updateRecipeSchema } from "@/schemas/updateRecipe.schema";
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const recipeId = (await params).id;
@@ -47,7 +47,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     try {
         const session = await getServerSession(authOptions);
         const userId = session?.user?._id;
-        if(!userId) {
+        if (!userId) {
             return NextResponse.json<ApiResponse>(
                 { success: false, message: "You must be logged in to delete a recipe" },
                 { status: 401 }
@@ -89,4 +89,60 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
 }
 
+export async function PATCH(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const session = await getServerSession(authOptions);
+        const userId = session?.user?._id;
+        if (!userId) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "You must be logged in to update a recipe" },
+                { status: 401 }
+            );
+        }
 
+        const { id: recipeId } = await params;
+        if (!isValidObjectId(recipeId)) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid recipe ID" },
+                { status: 400 }
+            );
+        }
+
+        const requestBody = await request.json();
+        const parsedData = updateRecipeSchema.safeParse(requestBody);
+        if (!parsedData.success) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid data", data: parsedData.error.format() },
+                { status: 400 }
+            );
+        }
+
+        await connectToDatabase();
+        const updatedRecipe = await Recipe.findOneAndUpdate(
+            { _id: recipeId, author: userId },
+            { $set: parsedData.data },
+            { new: true, runValidators: true, context: "query" }
+        );
+
+        if (!updatedRecipe) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Recipe not found or you are not authorized to update it" },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json<ApiResponse>(
+            { success: true, message: "Recipe updated successfully", data: updatedRecipe },
+            { status: 200 }
+        );
+    } catch (error: unknown) {
+        console.error("Error updating recipe:", error);
+        return NextResponse.json<ApiResponse>(
+            { success: false, message: "Failed to update recipe" },
+            { status: 500 }
+        );
+    }
+}
