@@ -365,15 +365,36 @@ const page = () => {
                         <h2 className="text-headline-sm font-headline-sm text-on-surface mb-6">
                             Instructions
                         </h2>
-                        <ol className="space-y-6">
-                            {recipe?.instructions.map((step, index) => (
-                                <li key={index} className="flex  items-center  gap-4">
-                                    <p className="font-headline-sm text-primary-container">{step?.order}.</p>
-                                    <p className="text-body-md text-on-surface ">
-                                        {step?.text}
-                                    </p>
-                                </li>))}
+                        <ol className="space-y-6 w-full">
+                            {instructionFields.map((step, index) => (
+                                isEditing ? (
+                                    <li key={index} className="flex  items-center  gap-4">
+                                        <p className="font-headline-sm text-primary-container">{index + 1}.</p>
+                                        <p className="text-body-md text-on-surface ">
+                                            <textarea
+                                                className="form-input-text font-body-md text-body-md !w-full resize-none"
+                                                placeholder="Explain this step..."
+                                                rows={2}
+                                                defaultValue={step?.text}
+                                                {...register(`instructions.${index}.text`)}
+                                            />
+                                        </p>
+                                    </li>
+                                ) : (
+
+                                    <li key={index} className="flex  items-center  gap-4">
+                                        <p className="font-headline-sm text-primary-container">{index+1}.</p>
+                                        <p className="text-body-md text-on-surface ">
+                                            {step?.text}
+                                        </p>
+                                    </li>)))}
                         </ol>
+                        {isEditing && (<PrimaryButton
+                            fontSize='small'
+                            onClick={() => appendInstruction({ order: instructionFields.length + 1, text: '' })}
+                            icon='add'
+                            label='Add Instruction'
+                        />)}
                     </section>
                 </div>
 

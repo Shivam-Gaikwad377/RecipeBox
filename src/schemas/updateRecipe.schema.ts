@@ -9,7 +9,7 @@ const updateIngredientSchema = z
   })
 const updateInstructionSchema = z.object({
   text: z.string().min(1, "Instruction text is required"),
-  // no `order` — array position is the source of truth
+  order: z.number().positive("Order must be greater than 0").optional(),
 });
 
 const updateNutritionalInfoSchema = z.object({
