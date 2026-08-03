@@ -8,13 +8,15 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import ApiResponse from "@/types/ApiResponse";
 import axios from "axios";
+import Image from 'next/image';
 import { UserDocument } from '@/models/user.model';
+
 const page = () => {
     const [recipe, setRecipe] = useState<RecipeDocument | null>(null);
     const pathname = usePathname();
     const id = pathname.split("/").pop(); // Extract the recipe ID from the URL
     const [author, setAuthor] = useState<UserDocument | null>(null);
-    const [followers, setFollowers] = useState<UserDocument[] | null>(null);
+    const [followers, setFollowers] = useState<number>(0);
     useEffect(() => {
         const fetchRecipe = async () => {
             try {
@@ -33,8 +35,8 @@ const page = () => {
         const fetchFollowers = async () => {
             try {
                 if (recipe && author) {
-                    const response = await axios.get<ApiResponse>(`/api/user/${author?._id}/followers`);
-                    setFollowers(response.data.data.count);
+                    const response = await axios.get<ApiResponse>(`/api/users/${author?._id}/followers`);
+                    setFollowers(response?.data?.data?.count);
                 }
             } catch (error) {
                 console.error("Error fetching followers:", error);
@@ -88,10 +90,12 @@ const page = () => {
                     <div
                         className="flex flex-col md:flex-row md:items-center justify-between py-6 border-t border-outline-variant/50 gap-6" >
                         <div className="flex items-center gap-4">
-                            <img
-                                alt="Rhea Sen"
+                            <Image
+                                alt="user avatar"
                                 className="w-12 h-12 rounded-full"
-                                src={author?.avatar?.avatarUrl}
+                                src={author?.avatar?.avatarUrl ?? 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}
+                                width={48}
+                                height={48}
                             />
                             <div>
                                 <p className="font-body-md font-semibold text-on-surface">
@@ -138,65 +142,49 @@ const page = () => {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-xl">
 
                 <section className="md:col-span-5">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-headline-sm font-headline-sm text-on-surface">
-                            Ingredients
-                        </h2>
-                        <div
-                            className="flex items-center gap-3 bg-surface-container rounded-full px-2 py-1"  >
-                            <button
-                                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-surface-variant text-on-surface-variant">
-                                -
-                            </button>
-                            <span className="text-label-sm font-label-sm font-semibold"  >4 servings</span>
-                            <button
-                                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-surface-variant text-on-surface-variant">
-                                +
-                            </button>
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-headline-sm font-headline-sm text-on-surface">
+                                Ingredients
+                            </h2>
+                            <div className="flex items-center gap-3 bg-surface-container rounded-full px-2 py-1">
+                                <span
+                                    className="material-symbols-outlined text-on-surface-variant"
+                                    data-icon="scale">restaurant</span>
+                                <span className="text-label-sm font-label-sm text-on-surface-variant">
+                                    {recipe?.servings} servings
+                                </span>
+                            </div>
                         </div>
-                        <button
-                            className="flex items-center gap-1 px-3 py-1 bg-primary-container text-on-primary-container rounded-full text-label-sm font-label-sm hover:bg-primary transition-colors ml-2">
-                            <span className="material-symbols-outlined text-[16px]">scale</span>
-                            Pro Scaling
-                        </button>
+
+                        {/* overflow-x-auto: table can clip on narrow viewports otherwise */}
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-body-md text-on-surface">
+                                <caption className="sr-only">List of recipe ingredients with quantity and unit</caption>
+                                <thead>
+                                    <tr className="text-left text-label-md text-on-surface-variant border-b border-outline-variant">
+                                        <th scope="col" className="py-2 pr-4 font-medium">Ingredient</th>
+                                        <th scope="col" className="py-2 pr-4 font-medium">Quantity</th>
+                                        <th scope="col" className="py-2 font-medium">Unit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {recipe?.ingredients.map((ing, index) => (
+                                        // index as key is fine here — your schema uses array
+                                        // position as the source of truth, no subdocument _ids
+                                        <tr key={index} className="border-b border-outline-variant last:border-0">
+                                            <td className="py-3 pr-4">{ing.name}</td>
+                                            <td className="py-3 pr-4 text-on-surface-variant">
+                                                {ing.quantity ?? ing.note ?? '—'}
+                                            </td>
+                                            <td className="py-3 text-on-surface-variant">{ing.unit ?? ''}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <ul className="space-y-4">
-                        <li className="flex items-start gap-3">
-                            <input
-                                className="mt-1 rounded text-primary focus:ring-primary border-outline-variant bg-surface"
-                                type="checkbox"
-                            />
-                            <span className="text-body-md text-on-surface" >1 whole chicken (about 1.8 kg)</span >
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <input
-                                className="mt-1 rounded text-primary focus:ring-primary border-outline-variant bg-surface"
-                                type="checkbox"
-                            />
-                            <span className="text-body-md text-on-surface">2 lemons, halved</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <input
-                                className="mt-1 rounded text-primary focus:ring-primary border-outline-variant bg-surface"
-                                type="checkbox"
-                            />
-                            <span className="text-body-md text-on-surface">4 garlic cloves</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <input
-                                className="mt-1 rounded text-primary focus:ring-primary border-outline-variant bg-surface"
-                                type="checkbox"
-                            />
-                            <span className="text-body-md text-on-surface">3 tbsp olive oil</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <input
-                                className="mt-1 rounded text-primary focus:ring-primary border-outline-variant bg-surface"
-                                type="checkbox"
-                            />
-                            <span className="text-body-md text-on-surface">Salt and pepper, to taste</span >
-                        </li>
-                    </ul>
+
                 </section>
 
                 <section className="md:col-span-7">
@@ -204,32 +192,13 @@ const page = () => {
                         Instructions
                     </h2>
                     <ol className="space-y-6">
-                        <li className="flex gap-4">
-                            <span className="font-headline-sm text-primary-container">1.</span>
-                            <p className="text-body-md text-on-surface pt-1">
-                                Pat the chicken dry and season generously inside and out.
-                            </p>
-                        </li>
-                        <li className="flex gap-4">
-                            <span className="font-headline-sm text-primary-container">2.</span>
-                            <p className="text-body-md text-on-surface pt-1">
-                                Stuff the cavity with lemon halves and garlic, then truss the
-                                legs.
-                            </p>
-                        </li>
-                        <li className="flex gap-4">
-                            <span className="font-headline-sm text-primary-container">3.</span>
-                            <p className="text-body-md text-on-surface pt-1">
-                                Roast at 220°C for 20 minutes, then lower to 190°C for 35
-                                minutes.
-                            </p>
-                        </li>
-                        <li className="flex gap-4">
-                            <span className="font-headline-sm text-primary-container">4.</span>
-                            <p className="text-body-md text-on-surface pt-1">
-                                Rest for 10 minutes before carving.
-                            </p>
-                        </li>
+                        {recipe?.instructions.map((step, index) => (
+                            <li key={index} className="flex  items-center  gap-4">
+                                <p className="font-headline-sm text-primary-container">{step?.order}.</p>
+                                <p className="text-body-md text-on-surface ">
+                                    {step?.text}
+                                </p>
+                            </li>))}
                     </ol>
                 </section>
             </div>
@@ -247,25 +216,25 @@ const page = () => {
                         <div>
                             <p className="text-label-sm text-on-surface-variant mb-1">Calories</p>
                             <p className="text-headline-md font-headline-md text-on-surface">
-                                420
+                                {recipe?.nutritionalInfo?.calories ?? '—'}kcal
                             </p>
                         </div>
                         <div>
                             <p className="text-label-sm text-on-surface-variant mb-1">Protein</p>
                             <p className="text-headline-md font-headline-md text-on-surface">
-                                38g
+                                {recipe?.nutritionalInfo?.protein ?? '—'}g
                             </p>
                         </div>
                         <div>
                             <p className="text-label-sm text-on-surface-variant mb-1">Carbs</p>
                             <p className="text-headline-md font-headline-md text-on-surface">
-                                12g
+                                {recipe?.nutritionalInfo?.carbs ?? '—'}g
                             </p>
                         </div>
                         <div>
                             <p className="text-label-sm text-on-surface-variant mb-1">Fat</p>
                             <p className="text-headline-md font-headline-md text-on-surface">
-                                27g
+                                {recipe?.nutritionalInfo?.fat ?? '—'}g
                             </p>
                         </div>
 
