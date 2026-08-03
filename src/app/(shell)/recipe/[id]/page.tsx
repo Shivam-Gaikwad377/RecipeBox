@@ -4,20 +4,51 @@ import PrimaryButton from '@/components/PrimaryButton'
 import SecondaryButton from '@/components/SecondaryButton'
 import { RecipeDocument } from "@/models/recipe.model";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { updateRecipeSchema, UpdateRecipeInput, UpdateRecipeOutput } from "@/schemas/updateRecipe.schema";
 import { usePathname } from "next/navigation";
 import ApiResponse from "@/types/ApiResponse";
 import axios from "axios";
 import Image from 'next/image';
 import { UserDocument } from '@/models/user.model';
 import RecipeCard from '@/components/shell/recipes/RecipeCard';
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 const page = () => {
     const [recipe, setRecipe] = useState<RecipeDocument | null>(null);
+    const { data: session } = useSession();
     const pathname = usePathname();
     const id = pathname.split("/").pop(); // Extract the recipe ID from the URL
     const [author, setAuthor] = useState<UserDocument | null>(null);
     const [followers, setFollowers] = useState<number>(0);
-    const [moreRecipes, setMoreRecipes] = useState<RecipeDocument[]>([]);
+    const [isEditing, setIsEditing] = useState(false)
+    const [moreRecipes, setMoreRecipes] = useState<RecipeDocument[]>([])
+    const [isFollowing, setIsFollowing] = useState<boolean>(false)
+    const form = useForm<UpdateRecipeInput, unknown, UpdateRecipeOutput>({
+        resolver: zodResolver(updateRecipeSchema),
+        defaultValues: {
+            title: recipe?.title,
+            description: recipe?.description,
+            coverImage: recipe?.coverImage ?? undefined,
+            ingredients: recipe?.ingredients,
+            instructions: recipe?.instructions,
+            nutritionalInfo: recipe?.nutritionalInfo ?? undefined,
+            tags: recipe?.tags,
+            prepTime: recipe?.prepTime,
+            cookTime: recipe?.cookTime,
+            difficulty: recipe?.difficulty,
+        },
+    });
+    const { register, handleSubmit, control, formState: { errors } } = form;
+    const { fields: ingredientFields, append: appendIngredient, remove: removeIngredient } = useFieldArray({
+        control,
+        name: "ingredients",
+    });
+    const { fields: instructionFields, append: appendInstruction, remove: removeInstruction } = useFieldArray({
+        control,
+        name: "instructions",
+    });
     useEffect(() => {
         const fetchRecipe = async () => {
             try {
@@ -59,201 +90,267 @@ const page = () => {
         }
         fetchMoreRecipes();
     }, [author])
+    useEffect(() => {
+        const fetchFollowStatus = async () => {
+            if (!author?._id || !session?.user?._id) return;
+            try {
+                const response = await axios.get<ApiResponse>(`/api/users/${author?._id}/follow/${session?.user?._id}`);
+                setIsFollowing(response.data.data.isFollowing);
+            } catch (error) {
+                console.error(error, "Failed to fetch follow status.");
+            }
+        }
+        fetchFollowStatus();
+    }, [author?._id, session?.user?._id]);
+    const handleFollow = async () => {
+        if (!session?.user?._id) {
+            toast.error("You must be logged in to follow users.");
+            return;
+        }
+        const response = await axios.post<ApiResponse>(`/api/users/${author?._id}/follow`);
+        setIsFollowing(true);
+    };
+    const handleUnfollow = async () => {
+        if (!session?.user?._id) {
+            toast.error("You must be logged in to unfollow users.");
+            return;
+        }
+        const response = await axios.delete<ApiResponse>(`/api/users/${author?._id}/follow`);
+        setIsFollowing(false);
+    }
     return (
         <main
             className="w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop pt-6 md:pt-12 pb-xl"  >
-            <article
-                className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden mb-12" >
-                <div className="w-full h-64 md:h-120 bg-surface-variant relative">
-                    <img
-                        className="w-full h-full object-cover"
-                        data-alt="A high-fidelity, professional food photography shot of a whole charred lemon and herb roast chicken on a rustic wooden board, garnished with fresh rosemary and roasted lemon halves, soft natural lighting, gourmet kitchen setting, 8k resolution, appetizing and premium."
-                        src={recipe?.coverImage?.coverImageURL}
-                    />
-                </div>
-                <div className="p-6 md:p-8">
-                    <h1
-                        className="text-display-lg-mobile md:text-display-lg font-display-lg text-on-surface mb-4" >
-                        {recipe?.title}
-                    </h1>
-                    <div
-                        className="flex flex-wrap items-center gap-6 text-on-surface-variant text-label-sm font-label-sm mb-8"  >
-                        <div className="flex items-center gap-2">
-                            <span
-                                className="material-symbols-outlined text-[18px]"
-                                data-icon="schedule">schedule</span>
-                            <span className="">{recipe?.prepTime} min prep</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span
-                                className="material-symbols-outlined text-[18px]"
-                                data-icon="local_fire_department">local_fire_department</span>
-                            <span className="">{recipe?.cookTime} min cook</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span
-                                className="material-symbols-outlined text-[18px]"
-                                data-icon="bar_chart">bar_chart</span>
-                            <span className="">{recipe?.difficulty}</span>
-                        </div>
-
-
-                    </div>
-
-                    <div
-                        className="flex flex-col md:flex-row md:items-center justify-between py-6 border-t border-outline-variant/50 gap-6" >
-                        <div className="flex items-center gap-4">
-                            <Image
-                                alt="user avatar"
-                                className="w-12 h-12 rounded-full"
-                                src={author?.avatar?.avatarUrl ?? 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}
-                                width={48}
-                                height={48}
-                            />
-                            <div>
-                                <p className="font-body-md font-semibold text-on-surface">
-                                    {author?.name}
-                                </p>
-                                <p className="text-label-sm font-label-sm text-on-surface-variant">
-                                    {followers} followers
-                                </p>
-                            </div>
-                            <button
-                                className="ml-4 px-4 py-1.5 border border-outline rounded-full text-label-sm font-label-sm font-semibold hover:bg-surface-variant transition-colors">
-                                Follow
-                            </button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span
-                                className="material-symbols-outlined text-primary-container"
-                                data-icon="star"
-                                data-weight="fill"
-                                style={{ fontVariationSettings: '"FILL" 1' }}>star</span>
-                            <span className="font-semibold text-body-md">4.6</span>
-                            <span className="text-on-surface-variant text-label-sm">(214 ratings)</span>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-4 pt-6">
-                        <PrimaryButton
-                            fontSize='medium'
-                            icon="bookmark_add"
-                            label="Save to Cookbook"
+            {<>
+                <article
+                    className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden mb-12" >
+                    <div className="w-full h-64 md:h-120 bg-surface-variant relative">
+                        <img
+                            className="w-full h-full object-cover"
+                            data-alt="A high-fidelity, professional food photography shot of a whole charred lemon and herb roast chicken on a rustic wooden board, garnished with fresh rosemary and roasted lemon halves, soft natural lighting, gourmet kitchen setting, 8k resolution, appetizing and premium."
+                            src={recipe?.coverImage?.coverImageURL}
                         />
-                        <SecondaryButton
-                            fontSize='medium'
-                            icon="calendar_add_on"
-                            label="Add to meal plan"
-                        />
-
-
-
                     </div>
-                </div>
-            </article>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-xl">
-
-                <section className="md:col-span-5">
-                    <div className="mb-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-headline-sm font-headline-sm text-on-surface">
-                                Ingredients
-                            </h2>
-                            <div className="flex items-center gap-3 bg-surface-container rounded-full px-2 py-1">
+                    <div className="p-6 md:p-8">
+                        <h1
+                            className="text-display-lg-mobile md:text-display-lg font-display-lg text-on-surface mb-4" >
+                            {recipe?.title}
+                        </h1>
+                        <div
+                            className="flex flex-wrap items-center gap-6 text-on-surface-variant text-label-sm font-label-sm mb-8"  >
+                            <div className="flex items-center gap-2">
                                 <span
-                                    className="material-symbols-outlined text-on-surface-variant"
-                                    data-icon="scale">restaurant</span>
-                                <span className="text-label-sm font-label-sm text-on-surface-variant">
-                                    {recipe?.servings} servings
-                                </span>
+                                    className="material-symbols-outlined text-[18px]"
+                                    data-icon="schedule">schedule</span>
+                                {isEditing ? (<input
+                                    className="form-input-number px-2 w-16"
+                                    type="number"
+                                    placeholder="0"
+                                    {...register("prepTime", { valueAsNumber: true })}
+                                />) : (<span className="">{recipe?.prepTime} min prep</span>)}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span
+                                    className="material-symbols-outlined text-[18px]"
+                                    data-icon="local_fire_department">local_fire_department</span>
+                                {isEditing ? (<input
+                                    className="form-input-number px-2 w-16"
+                                    type="number"
+                                    placeholder="0"
+                                    {...register("cookTime", { valueAsNumber: true })}
+                                />) : (<span className="">{recipe?.cookTime} min cook</span>)}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span
+                                    className="material-symbols-outlined text-[18px]"
+                                    data-icon="bar_chart">bar_chart</span>
+                                {isEditing ? (<select
+                                    id="difficulty"
+                                    className="form-input-text"
+                                    {...register("difficulty")}
+                                >
+                                    <option value="Easy">Easy</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Hard">Hard</option>
+                                </select>) : (<span className="">{recipe?.difficulty}</span>)}
+                            </div>
+
+
+                        </div>
+
+                        <div
+                            className="flex flex-col md:flex-row md:items-center justify-between py-6 border-t border-outline-variant/50 gap-6" >
+                            <div className="flex items-center gap-4">
+                                <Image
+                                    alt="user avatar"
+                                    className="w-12 h-12 rounded-full"
+                                    src={author?.avatar?.avatarUrl ?? 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}
+                                    width={48}
+                                    height={48}
+                                />
+                                <div>
+                                    <p className="font-body-md font-semibold text-on-surface">
+                                        {author?.name}
+                                    </p>
+                                    <p className="text-label-sm font-label-sm text-on-surface-variant">
+                                        {followers} followers
+                                    </p>
+                                </div>
+                                {session?.user?.id === author?._id && (
+                                    isFollowing ? (
+                                        <SecondaryButton
+                                            fontSize="small"
+                                            icon="person_remove"
+                                            label="Unfollow"
+                                            onClick={handleUnfollow} />
+                                    ) : (
+                                        <PrimaryButton
+                                            fontSize="small"
+                                            icon="person_add"
+                                            label="Follow"
+                                            onClick={handleFollow} />
+                                    )
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span
+                                    className="material-symbols-outlined text-primary-container"
+                                    data-icon="star"
+                                    data-weight="fill"
+                                    style={{ fontVariationSettings: '"FILL" 1' }}>star</span>
+                                <span className="font-semibold text-body-md">4.6</span>
+                                <span className="text-on-surface-variant text-label-sm">(214 ratings)</span>
                             </div>
                         </div>
 
-                        {/* overflow-x-auto: table can clip on narrow viewports otherwise */}
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-body-md text-on-surface">
-                                <caption className="sr-only">List of recipe ingredients with quantity and unit</caption>
-                                <thead>
-                                    <tr className="text-left text-label-md text-on-surface-variant border-b border-outline-variant">
-                                        <th scope="col" className="py-2 pr-4 font-medium">Ingredient</th>
-                                        <th scope="col" className="py-2 pr-4 font-medium">Quantity</th>
-                                        <th scope="col" className="py-2 font-medium">Unit</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {recipe?.ingredients.map((ing, index) => (
-                                        // index as key is fine here — your schema uses array
-                                        // position as the source of truth, no subdocument _ids
-                                        <tr key={index} className="border-b border-outline-variant last:border-0">
-                                            <td className="py-3 pr-4">{ing.name}</td>
-                                            <td className="py-3 pr-4 text-on-surface-variant">
-                                                {ing.quantity ?? ing.note ?? '—'}
-                                            </td>
-                                            <td className="py-3 text-on-surface-variant">{ing.unit ?? ''}</td>
+                        <div className="flex flex-wrap gap-4 pt-6">
+                            <PrimaryButton
+                                fontSize='medium'
+                                icon="bookmark_add"
+                                label="Save to Cookbook"
+                            />
+                            <SecondaryButton
+                                fontSize='medium'
+                                icon="calendar_add_on"
+                                label="Add to meal plan"
+                            />
+                            {session?.user?._id === author?._id && (
+                                <SecondaryButton
+                                    fontSize="medium"
+                                    icon="edit"
+                                    label="Edit Recipe"
+                                    onClick={() => setIsEditing(true)}
+                                />
+                            )}
+
+
+
+                        </div>
+                    </div>
+                </article>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-xl">
+
+                    <section className="md:col-span-5">
+                        <div className="mb-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-headline-sm font-headline-sm text-on-surface">
+                                    Ingredients
+                                </h2>
+                                <div className="flex items-center gap-3 bg-surface-container rounded-full px-2 py-1">
+                                    <span
+                                        className="material-symbols-outlined text-on-surface-variant"
+                                        data-icon="scale">restaurant</span>
+                                    <span className="text-label-sm font-label-sm text-on-surface-variant">
+                                        {recipe?.servings} servings
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* overflow-x-auto: table can clip on narrow viewports otherwise */}
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-body-md text-on-surface">
+                                    <caption className="sr-only">List of recipe ingredients with quantity and unit</caption>
+                                    <thead>
+                                        <tr className="text-left text-label-md text-on-surface-variant border-b border-outline-variant">
+                                            <th scope="col" className="py-2 pr-4 font-medium">Ingredient</th>
+                                            <th scope="col" className="py-2 pr-4 font-medium">Quantity</th>
+                                            <th scope="col" className="py-2 font-medium">Unit</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {recipe?.ingredients.map((ing, index) => (
+                                            // index as key is fine here — your schema uses array
+                                            // position as the source of truth, no subdocument _ids
+                                            <tr key={index} className="border-b border-outline-variant last:border-0">
+                                                <td className="py-3 pr-4">{ing.name}</td>
+                                                <td className="py-3 pr-4 text-on-surface-variant">
+                                                    {ing.quantity ?? ing.note ?? '—'}
+                                                </td>
+                                                <td className="py-3 text-on-surface-variant">{ing.unit ?? ''}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
+
+                    </section>
+
+                    <section className="md:col-span-7">
+                        <h2 className="text-headline-sm font-headline-sm text-on-surface mb-6">
+                            Instructions
+                        </h2>
+                        <ol className="space-y-6">
+                            {recipe?.instructions.map((step, index) => (
+                                <li key={index} className="flex  items-center  gap-4">
+                                    <p className="font-headline-sm text-primary-container">{step?.order}.</p>
+                                    <p className="text-body-md text-on-surface ">
+                                        {step?.text}
+                                    </p>
+                                </li>))}
+                        </ol>
+                    </section>
+                </div>
+
+                <section
+                    className="mb-xl relative rounded-xl border border-outline-variant/30 overflow-hidden bg-surface-container-lowest p-8"
+                >
+                    <div className="flex items-center justify-between mb-8 relative z-10">
+                        <h2 className="text-headline-sm font-headline-sm text-on-surface">
+                            Nutritional info
+                        </h2>
                     </div>
-
-                </section>
-
-                <section className="md:col-span-7">
-                    <h2 className="text-headline-sm font-headline-sm text-on-surface mb-6">
-                        Instructions
-                    </h2>
-                    <ol className="space-y-6">
-                        {recipe?.instructions.map((step, index) => (
-                            <li key={index} className="flex  items-center  gap-4">
-                                <p className="font-headline-sm text-primary-container">{step?.order}.</p>
-                                <p className="text-body-md text-on-surface ">
-                                    {step?.text}
+                    <div className="relative">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                            <div>
+                                <p className="text-label-sm text-on-surface-variant mb-1">Calories</p>
+                                <p className="text-headline-md font-headline-md text-on-surface">
+                                    {recipe?.nutritionalInfo?.calories ?? '—'}kcal
                                 </p>
-                            </li>))}
-                    </ol>
-                </section>
-            </div>
+                            </div>
+                            <div>
+                                <p className="text-label-sm text-on-surface-variant mb-1">Protein</p>
+                                <p className="text-headline-md font-headline-md text-on-surface">
+                                    {recipe?.nutritionalInfo?.protein ?? '—'}g
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-label-sm text-on-surface-variant mb-1">Carbs</p>
+                                <p className="text-headline-md font-headline-md text-on-surface">
+                                    {recipe?.nutritionalInfo?.carbs ?? '—'}g
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-label-sm text-on-surface-variant mb-1">Fat</p>
+                                <p className="text-headline-md font-headline-md text-on-surface">
+                                    {recipe?.nutritionalInfo?.fat ?? '—'}g
+                                </p>
+                            </div>
 
-            <section
-                className="mb-xl relative rounded-xl border border-outline-variant/30 overflow-hidden bg-surface-container-lowest p-8"
-            >
-                <div className="flex items-center justify-between mb-8 relative z-10">
-                    <h2 className="text-headline-sm font-headline-sm text-on-surface">
-                        Nutritional info
-                    </h2>
-                </div>
-                <div className="relative">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                        <div>
-                            <p className="text-label-sm text-on-surface-variant mb-1">Calories</p>
-                            <p className="text-headline-md font-headline-md text-on-surface">
-                                {recipe?.nutritionalInfo?.calories ?? '—'}kcal
-                            </p>
                         </div>
-                        <div>
-                            <p className="text-label-sm text-on-surface-variant mb-1">Protein</p>
-                            <p className="text-headline-md font-headline-md text-on-surface">
-                                {recipe?.nutritionalInfo?.protein ?? '—'}g
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-label-sm text-on-surface-variant mb-1">Carbs</p>
-                            <p className="text-headline-md font-headline-md text-on-surface">
-                                {recipe?.nutritionalInfo?.carbs ?? '—'}g
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-label-sm text-on-surface-variant mb-1">Fat</p>
-                            <p className="text-headline-md font-headline-md text-on-surface">
-                                {recipe?.nutritionalInfo?.fat ?? '—'}g
-                            </p>
-                        </div>
-
                     </div>
-                </div>
-            </section>
+                </section></>}
 
             <section className="mb-xl border-t border-outline-variant/50 pt-12">
                 <h2 className="text-headline-sm font-headline-sm text-on-surface mb-8">

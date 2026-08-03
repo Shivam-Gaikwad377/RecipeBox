@@ -13,10 +13,10 @@ const updateInstructionSchema = z.object({
 });
 
 const updateNutritionalInfoSchema = z.object({
-  calories: z.coerce.number().nonnegative(),
-  protein: z.coerce.number().nonnegative(),
-  carbs: z.coerce.number().nonnegative(),
-  fat: z.coerce.number().nonnegative(),
+  calories: z.number().nonnegative(),
+  protein: z.number().nonnegative(),
+  carbs: z.number().nonnegative(),
+  fat: z.number().nonnegative(),
 });
 
 export const updateRecipeSchema = z
@@ -46,3 +46,6 @@ export const updateRecipeSchema = z
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
   });
+
+  export type UpdateRecipeInput = z.input<typeof updateRecipeSchema>;
+  export type UpdateRecipeOutput = z.output<typeof updateRecipeSchema>;
