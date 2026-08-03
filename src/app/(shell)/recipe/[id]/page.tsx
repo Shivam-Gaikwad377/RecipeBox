@@ -118,6 +118,21 @@ const page = () => {
         const response = await axios.delete<ApiResponse>(`/api/users/${author?._id}/follow`);
         setIsFollowing(false);
     }
+    useEffect(() => {
+        if (!recipe) return;
+        form.reset({
+            title: recipe.title,
+            description: recipe.description,
+            coverImage: recipe.coverImage ?? undefined,
+            ingredients: recipe.ingredients,
+            instructions: recipe.instructions,
+            nutritionalInfo: recipe.nutritionalInfo ?? undefined,
+            tags: recipe.tags,
+            prepTime: recipe.prepTime,
+            cookTime: recipe.cookTime,
+            difficulty: recipe.difficulty,
+        });
+    }, [recipe, form]);
     return (
         <main
             className="w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop pt-6 md:pt-12 pb-xl"  >
@@ -279,19 +294,68 @@ const page = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {recipe?.ingredients.map((ing, index) => (
+                                        {ingredientFields?.map((ing, index) => (
                                             // index as key is fine here — your schema uses array
                                             // position as the source of truth, no subdocument _ids
                                             <tr key={index} className="border-b border-outline-variant last:border-0">
-                                                <td className="py-3 pr-4">{ing.name}</td>
-                                                <td className="py-3 pr-4 text-on-surface-variant">
-                                                    {ing.quantity ?? ing.note ?? '—'}
-                                                </td>
-                                                <td className="py-3 text-on-surface-variant">{ing.unit ?? ''}</td>
+                                                {isEditing ? (
+                                                    <>
+                                                        <td className="py-3 pr-4"><input
+                                                            className="form-input-text grow"
+                                                            placeholder="Ingredient (e.g. Flour)"
+                                                            defaultValue={ing.name}
+                                                            {...register(`ingredients.${index}.name`)}
+                                                        />
+                                                        </td>
+                                                        <td className="py-3 pr-4 text-on-surface-variant">
+                                                            <input
+                                                                className="form-input-text w-24"
+                                                                placeholder="Qty"
+                                                                type="number"
+                                                                step="any"
+                                                                defaultValue={ing?.quantity as number | undefined}
+                                                                {...register(`ingredients.${index}.quantity`, { valueAsNumber: true })}
+                                                            />
+                                                        </td>
+                                                        <td className="py-3 text-on-surface-variant">
+                                                            <select className="form-input-text w-32 pr-4" {...register(`ingredients.${index}.unit`)}>
+                                                                <option value="cups">Cups</option>
+                                                                <option value="tbsp">Tbsp</option>
+                                                                <option value="g">Grams</option>
+                                                            </select>
+                                                        </td>
+                                                        <td className="py-3 text-on-surface-variant">
+                                                            <button
+                                                                type="button"
+                                                                className="text-error-container hover:text-error"
+                                                                onClick={() => removeIngredient(index)}
+                                                            >
+                                                                <span className="material-symbols-outlined">delete</span>
+                                                            </button>
+                                                        </td>
+                                                    </>
+                                                )
+                                                    : (
+                                                        <>
+                                                            <td className="py-3 pr-4">{ing.name}</td>
+                                                            <td className="py-3 pr-4 text-on-surface-variant">
+                                                                {ing.quantity as number | undefined ?? ''}
+                                                            </td>
+                                                            <td className="py-3 text-on-surface-variant">{ing.unit ?? ''}</td>
+                                                        </>
+                                                    )}
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
+                                {isEditing && (
+                                    <PrimaryButton
+                                        fontSize="small"
+                                        icon="add"
+                                        label="Add Ingredient"
+                                        onClick={() => appendIngredient({ name: "", quantity: undefined, unit: "" })}
+                                    />
+                                )}
                             </div>
                         </div>
 
@@ -325,27 +389,63 @@ const page = () => {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
                             <div>
                                 <p className="text-label-sm text-on-surface-variant mb-1">Calories</p>
-                                <p className="text-headline-md font-headline-md text-on-surface">
-                                    {recipe?.nutritionalInfo?.calories ?? '—'}kcal
-                                </p>
+                                {isEditing ? (
+                                    <input
+                                        className="form-input-number px-2 w-16"
+                                        type="number"
+                                        placeholder="0"
+                                        {...register("nutritionalInfo.calories", { valueAsNumber: true })}
+                                    />
+                                ) : (
+                                    <p className="text-headline-md font-headline-md text-on-surface">
+                                        {recipe?.nutritionalInfo?.calories ?? '—'}kcal
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <p className="text-label-sm text-on-surface-variant mb-1">Protein</p>
-                                <p className="text-headline-md font-headline-md text-on-surface">
-                                    {recipe?.nutritionalInfo?.protein ?? '—'}g
-                                </p>
+                                {isEditing ? (
+                                    <input
+                                        className="form-input-number px-2 w-16"
+                                        type="number"
+                                        placeholder="0"
+                                        {...register("nutritionalInfo.protein", { valueAsNumber: true })}
+                                    />
+                                ) : (
+                                    <p className="text-headline-md font-headline-md text-on-surface">
+                                        {recipe?.nutritionalInfo?.protein ?? '—'}g
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <p className="text-label-sm text-on-surface-variant mb-1">Carbs</p>
-                                <p className="text-headline-md font-headline-md text-on-surface">
-                                    {recipe?.nutritionalInfo?.carbs ?? '—'}g
-                                </p>
+                                {isEditing ? (
+                                    <input
+                                        className="form-input-number px-2 w-16"
+                                        type="number"
+                                        placeholder="0"
+                                        {...register("nutritionalInfo.carbs", { valueAsNumber: true })}
+                                    />
+                                ) : (
+                                    <p className="text-headline-md font-headline-md text-on-surface">
+                                        {recipe?.nutritionalInfo?.carbs ?? '—'}g
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <p className="text-label-sm text-on-surface-variant mb-1">Fat</p>
-                                <p className="text-headline-md font-headline-md text-on-surface">
-                                    {recipe?.nutritionalInfo?.fat ?? '—'}g
-                                </p>
+                                {isEditing ? (
+                                    <input
+                                        className="form-input-number px-2 w-16"
+                                        type="number"
+                                        placeholder="0"
+                                        {...register("nutritionalInfo.fat", { valueAsNumber: true })}
+                                    />
+                                ) : (
+                                    <p className="text-headline-md font-headline-md text-on-surface">
+                                        {recipe?.nutritionalInfo?.fat ?? '—'}g
+                                    </p>
+                                )}
                             </div>
 
                         </div>
@@ -441,7 +541,7 @@ const page = () => {
                     }
                 </div>
             </section>
-        </main>
+        </main >
     )
 }
 
