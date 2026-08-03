@@ -11,7 +11,7 @@ type RecipeCardProps1 = {
 const RecipeCard = ({ title, imageUrl, rating, reviewCount, cookTime, difficulty }: RecipeCardProps1) => {
     return (
         <article className="group bg-surface-container-lowest rounded-xl recipe-card-shadow w-50  flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
-            <div className="relative aspect-4/3 ">
+            <div className="relative h-50 aspect-4/3 ">
                 <img className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" data-alt="A vibrant and appetizing roasted veggie bowl with sweet potatoes, kale, chickpeas, and a drizzle of tahini sauce. The lighting is soft and natural, emphasizing the rich textures and organic colors of the vegetables. The dish is presented on a minimalist ceramic plate against a warm parchment-toned wooden table, creating an airy and modern gourmet magazine aesthetic." src={imageUrl} />
                 <div className="absolute top-sm right-sm bg-black/60 backdrop-blur-sm text-white px-2 py-1 rounded-lg flex items-center space-x-1">
                     <span className="material-symbols-outlined text-[14px] text-secondary-container" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
