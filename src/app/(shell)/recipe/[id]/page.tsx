@@ -46,7 +46,19 @@ const page = () => {
         fetchFollowers();
     }, [recipe])
 
-    console.log("Recipe data:", recipe); // Log the recipe data to the console
+    useEffect(() => {
+        const fetchMoreRecipes = async () => {
+            try {
+                if (author) {
+                    const response = await axios.get<ApiResponse>(`/api/users/${author?._id}/recipes`);
+                    setMoreRecipes(response?.data?.data?.recipes);
+                }
+            } catch (error) {
+                console.error("Error fetching more recipes:", error);
+            }
+        }
+        fetchMoreRecipes();
+    }, [author])
     return (
         <main
             className="w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop pt-6 md:pt-12 pb-xl"  >
@@ -322,7 +334,7 @@ const page = () => {
                     More from {author?.name}
                 </h2>
                 <div
-                    className="flex overflow-x-auto gap-6 pb-4 scroll-hide -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0"
+                    className="flex overflow-x-auto overflow-auto gap-6 pb-4 scrollbar-hide w-auto -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0"
                 >
 
                     {
