@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { RatingDocument } from "@/models/rating.model";
 import { Rating } from "@/models/rating.model";
 import { ratingSchema } from "@/schemas/rating.schema";
-import { z } from "zod";
+import { isValidObjectId } from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/options";
 import { connectToDatabase } from "@/lib/dbConfig";
 import ApiResponse from "@/types/ApiResponse";
 import { recalculateRecipeRating } from "@/helpers/recalculatingRating";
-
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+import { Recipe } from "@/models/recipe.model";
+type RouteContext = {
+    params: Promise<{ id: string }>;
+};
+export async function POST(req: NextRequest, { params }: RouteContext) {
     try {
         const session = await getServerSession(authOptions);
         const userId = session?.user?._id;
@@ -23,6 +26,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         }
 
         const recipeId = (await params).id;
+        if (!isValidObjectId(recipeId)) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid recipe id" },
+                { status: 400 }
+            );
+        }
+
+        const recipeExists = await Recipe.exists({ _id: recipeId });
+        if (!recipeExists) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Recipe not found" },
+                { status: 404 }
+            );
+        }
         const requestBody = await req.json();
         const parsedData = ratingSchema.safeParse({ ...requestBody, recipe: recipeId, user: userId });
 
@@ -36,18 +53,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
         await connectToDatabase();
 
-        const raiting  = await Rating.findOneAndUpdate<RatingDocument>(
+        const raiting = await Rating.findOneAndUpdate<RatingDocument>(
             { recipe: recipeId, user: userId },
             { value: parsedData.data.value },
-            { new: true, upsert: true }
+            { returnDocument: 'after', upsert: true }
         );
 
-        const { avgRating, ratingCount } = await recalculateRecipeRating(recipeId);
+        const { ratingAverage, ratingCount } = await recalculateRecipeRating(recipeId);
 
         return NextResponse.json<ApiResponse>({
             success: true,
             message: "Rating submitted successfully",
-            data: { avgRating, ratingCount },
+            data: { ratingAverage, ratingCount },
         }, { status: 200 });
     } catch (error) {
         console.error("Error submitting rating:", error);
@@ -55,6 +72,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             success: false,
             message: "An error occurred while submitting the rating",
         }, { status: 500 });
-        
+
     }
 }
