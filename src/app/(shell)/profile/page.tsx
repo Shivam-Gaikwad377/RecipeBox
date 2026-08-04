@@ -40,9 +40,9 @@ const ProfilePage = () => {
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [userData, setUserData] = useState<UserDocument | null>(null);
-  const [followerCount, setFollowerCount] = useState<number>(0);
-  const [followingCount, setFollowingCount] = useState<number>(0);
-  const { data: userDataResponse, loading: userDataLoading, error: userDataError } = useFetch<UserDocument>(`/api/profile/${session?.data?.user?.username}`, {}, setUserData);
+  const [followerCount, setFollowerCount] = useState<{ count: number } | null>({ count: 0 });
+  const [followingCount, setFollowingCount] = useState<{ count: number } | null>({ count: 0 });
+  const {  loading: userDataLoading, error: userDataError } = useFetch<UserDocument>(`/api/profile/${session?.data?.user?.username}`, {}, setUserData);
   
 
   const form = useForm<UpdateProfileInput>({
@@ -199,8 +199,8 @@ const ProfilePage = () => {
   const isSaveDisabled =
     isSubmitting || usernameStatus === "checking" || usernameStatus === "taken";
 
-  const { data: followerData, loading: followerLoading, error: followerError } = useFetch<{count: number}>(`/api/users/${userData?._id.toString()}/followers`);
-  const { data: followingData, loading: followingLoading, error: followingError } = useFetch<{count: number}>(`/api/users/${userData?._id.toString()}/following`);
+  const {  loading: followerLoading, error: followerError } = useFetch<{ count: number }>(`/api/users/${userData?._id.toString()}/followers`, {}, setFollowerCount);
+  const {  loading: followingLoading, error: followingError } = useFetch<{ count: number }>(`/api/users/${userData?._id.toString()}/following`, {}, setFollowingCount);
   return (
     <>
       <section className="col-span-4 md:col-span-12 flex flex-col md:flex-row items-center md:items-start gap-lg mb-xl mt-lg">
@@ -254,7 +254,7 @@ const ProfilePage = () => {
             </div>
             <div className="flex flex-col items-center md:items-start">
               <span className="text-label-md text-on-surface">
-                {followerData?.count}
+                {followerCount?.count}
               </span>
               <span className="font-label-sm text-label-sm text-on-surface-variant">
                 Followers
@@ -262,7 +262,7 @@ const ProfilePage = () => {
             </div>
             <div className="flex flex-col items-center md:items-start">
               <span className="text-label-md text-on-surface">
-                {followingData?.count}
+                {followingCount?.count}
               </span>
               <span className="font-label-sm text-label-sm text-on-surface-variant">
                 Following

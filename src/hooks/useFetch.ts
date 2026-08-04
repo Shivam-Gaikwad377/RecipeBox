@@ -45,7 +45,7 @@ const useFetch = <T>(url: string, params: Record<string, any> = {},setItems:Disp
     };
   }, [url, serializedParams]);
 
-  return { data, loading, error };
+  return { loading, error };
 };
 
 export default useFetch;
