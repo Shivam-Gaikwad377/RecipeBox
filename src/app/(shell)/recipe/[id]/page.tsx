@@ -15,22 +15,28 @@ import { useForm, useFieldArray, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import useFetch from '@/hooks/useFetch';
 const page = () => {
     const [recipe, setRecipe] = useState<RecipeDocument | null>(null);
     const { data: session } = useSession();
     const pathname = usePathname();
     const id = pathname.split("/").pop(); // Extract the recipe ID from the URL
     const [author, setAuthor] = useState<UserDocument | null>(null);
-    const [followers, setFollowers] = useState<number>(0);
+    const [followers, setFollowers] = useState<{ count: number } | null>({ count: 0 });
     const [isEditing, setIsEditing] = useState(false)
-    const [moreRecipes, setMoreRecipes] = useState<RecipeDocument[]>([])
-    const [isFollowing, setIsFollowing] = useState<boolean>(false)
+    const [moreRecipes, setMoreRecipes] = useState<{total: number, recipes: RecipeDocument[]} | null>(null);
+    const [isFollowing, setIsFollowing] = useState<{ isFollowing: boolean } | null>(null);
     const form = useForm<UpdateRecipeInput, unknown, UpdateRecipeOutput>({
         resolver: zodResolver(updateRecipeSchema),
         defaultValues: {
             title: recipe?.title,
             description: recipe?.description,
-            coverImage: recipe?.coverImage ?? undefined,
+            coverImage: recipe?.coverImage
+                ? {
+                    coverImageURL: recipe.coverImage.coverImageURL,
+                    coverImageFileId: recipe.coverImage.coverImageFileId ?? undefined,
+                }
+                : undefined,
             ingredients: recipe?.ingredients,
             instructions: recipe?.instructions,
             nutritionalInfo: recipe?.nutritionalInfo ?? undefined,
@@ -49,66 +55,26 @@ const page = () => {
         control,
         name: "instructions",
     });
-    useEffect(() => {
-        const fetchRecipe = async () => {
-            try {
 
-                const response = await axios.get<ApiResponse>(`/api/recipe/${id}`);
-                setRecipe(response?.data?.data);
-                setAuthor(response?.data?.data?.author);
-            } catch (error) {
-                console.error("Error fetching recipe:", error);
-            }
-        };
+    const { loading: recipeLoading, error: recipeError } = useFetch<RecipeDocument>(`/api/recipe/${id}`, {}, setRecipe);
+    useEffect(() => {
+        if (recipe) {
+            setAuthor(recipe?.author as unknown as UserDocument);
+        }
+    }, [recipe]);
 
-        fetchRecipe();
-    }, []);
-    useEffect(() => {
-        const fetchFollowers = async () => {
-            try {
-                if (recipe && author) {
-                    const response = await axios.get<ApiResponse>(`/api/users/${author?._id}/followers`);
-                    setFollowers(response?.data?.data?.count);
-                }
-            } catch (error) {
-                console.error("Error fetching followers:", error);
-            }
-        }
-        fetchFollowers();
-    }, [recipe])
+    const { loading: followerLoading, error: followerError } = useFetch<{ count: number }>(`/api/users/${author?._id}/followers`, {}, setFollowers);
 
-    useEffect(() => {
-        const fetchMoreRecipes = async () => {
-            try {
-                if (author) {
-                    const response = await axios.get<ApiResponse>(`/api/users/${author?._id}/recipes`);
-                    setMoreRecipes(response?.data?.data?.recipes);
-                }
-            } catch (error) {
-                console.error("Error fetching more recipes:", error);
-            }
-        }
-        fetchMoreRecipes();
-    }, [author])
-    useEffect(() => {
-        const fetchFollowStatus = async () => {
-            if (!author?._id || !session?.user?._id) return;
-            try {
-                const response = await axios.get<ApiResponse>(`/api/users/${author?._id}/follow/${session?.user?._id}`);
-                setIsFollowing(response.data.data.isFollowing);
-            } catch (error) {
-                console.error(error, "Failed to fetch follow status.");
-            }
-        }
-        fetchFollowStatus();
-    }, [author?._id, session?.user?._id]);
+    const { loading: moreRecipesLoading, error: moreRecipesError } = useFetch<{total: number, recipes: RecipeDocument[]}>(`/api/users/${author?._id}/recipes`, {}, setMoreRecipes);
+    const { loading: isFollowingLoading, error: isFollowingError } = useFetch<{ isFollowing: boolean }>(`/api/users/${author?._id}/follow/${session?.user?._id}`, {}, setIsFollowing);
+
     const handleFollow = async () => {
         if (!session?.user?._id) {
             toast.error("You must be logged in to follow users.");
             return;
         }
         const response = await axios.post<ApiResponse>(`/api/users/${author?._id}/follow`);
-        setIsFollowing(true);
+        setIsFollowing({ isFollowing: true });
     };
     const handleUnfollow = async () => {
         if (!session?.user?._id) {
@@ -116,14 +82,19 @@ const page = () => {
             return;
         }
         const response = await axios.delete<ApiResponse>(`/api/users/${author?._id}/follow`);
-        setIsFollowing(false);
+        setIsFollowing({ isFollowing: false });
     }
     useEffect(() => {
         if (!recipe) return;
         form.reset({
             title: recipe.title,
             description: recipe.description,
-            coverImage: recipe.coverImage ?? undefined,
+            coverImage: recipe.coverImage
+                ? {
+                    coverImageURL: recipe.coverImage.coverImageURL,
+                    coverImageFileId: recipe.coverImage.coverImageFileId ?? undefined,
+                }
+                : undefined,
             ingredients: recipe.ingredients,
             instructions: recipe.instructions,
             nutritionalInfo: recipe.nutritionalInfo ?? undefined,
@@ -225,11 +196,11 @@ const page = () => {
                                         {author?.name}
                                     </p>
                                     <p className="text-label-sm font-label-sm text-on-surface-variant">
-                                        {followers} followers
+                                        {followers?.count} followers
                                     </p>
                                 </div>
                                 {session?.user?.id === author?._id && (
-                                    isFollowing ? (
+                                    isFollowing?.isFollowing ? (
                                         <SecondaryButton
                                             fontSize="small"
                                             icon="person_remove"
@@ -588,7 +559,7 @@ const page = () => {
                 >
 
                     {
-                        moreRecipes.map((recipe) => (
+                        moreRecipes?.recipes?.map((recipe) => (
                             <RecipeCard key={recipe?._id.toString()} title={recipe.title} rating={4.5} imageUrl={recipe?.coverImage?.coverImageURL} reviewCount={120} cookTime={`${recipe?.cookTime} min`} difficulty={recipe?.difficulty} />
                         ))
                     }
