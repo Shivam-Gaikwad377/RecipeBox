@@ -7,7 +7,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/options";
 import { connectToDatabase } from "@/lib/dbConfig";
 import ApiResponse from "@/types/ApiResponse";
-
+import { recalculateRecipeRating } from "@/helpers/recalculatingRating";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
     try {
@@ -42,10 +42,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             { new: true, upsert: true }
         );
 
+        const { avgRating, ratingCount } = await recalculateRecipeRating(recipeId);
+
         return NextResponse.json<ApiResponse>({
             success: true,
             message: "Rating submitted successfully",
-            data: raiting,
+            data: { avgRating, ratingCount },
         }, { status: 200 });
     } catch (error) {
         console.error("Error submitting rating:", error);
