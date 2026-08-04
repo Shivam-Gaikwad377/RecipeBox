@@ -2,9 +2,9 @@ import { z } from "zod";
 
 export const ingredientsSchema = z.object({
     name: z.string().trim().min(1, "Ingredient name is required").max(100, "Ingredient name cannot exceed 100 characters"),
-    quantity: z.number().min(1, "Ingredient quantity is required").max(50, "Ingredient quantity cannot exceed 50 characters"),
-    unit: z.string().trim().max(20, "Ingredient unit cannot exceed 20 characters").optional(),
-    note: z.string().trim().max(100, "Ingredient note cannot exceed 100 characters").optional(),
+    quantity: z.number().min(1, "Ingredient quantity is required"),
+    unit: z.string().min(1).optional(),
+
 });
 
 export const instructionsSchema = z.object({

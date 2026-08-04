@@ -26,7 +26,7 @@ export const updateRecipeSchema = z
     coverImage: z
       .object({
         coverImageURL: z.string().url("Invalid URL").optional(),
-        coverImagePublicId: z.string().min(1).optional(),
+        coverImageFileId: z.string().min(1).optional(),
       })
       .optional(),
     ingredients: z

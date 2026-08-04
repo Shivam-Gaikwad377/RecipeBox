@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?._id;
-    
+
     if (!userId) {
       return NextResponse.json<ApiResponse>(
         { success: false, message: "You must be logged in to create a recipe" },
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     if (!parseResult.success) {
       const errorMessages = parseResult.error.issues
-        .map((err) => err.message)
+        .map((err) => `${err.path.join(".") || "root"}: ${err.message}`)
         .join(", ");
       return NextResponse.json<ApiResponse>(
         { success: false, message: `Validation failed: ${errorMessages}` },
@@ -61,4 +61,4 @@ export async function POST(request: Request) {
   }
 }
 
-    
+
