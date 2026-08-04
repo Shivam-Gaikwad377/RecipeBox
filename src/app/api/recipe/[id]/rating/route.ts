@@ -75,3 +75,44 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     }
 }
+
+
+export async function DELETE(req: NextRequest, { params }: RouteContext) {
+    try {
+        const session = await getServerSession(authOptions);
+        const userId = session?.user?._id;
+        const recipeId = (await params).id;
+        if (!isValidObjectId(recipeId)) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid recipe id" },
+                { status: 400 }
+            );
+        }
+
+        await connectToDatabase();
+
+        const rating = await Rating.findOneAndDelete({ recipe: recipeId, user: userId });
+
+        if (!rating) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Rating not found" },
+                { status: 404 }
+            );
+        }
+
+        const { ratingAverage, ratingCount } = await recalculateRecipeRating(recipeId);
+
+        return NextResponse.json<ApiResponse>({
+            success: true,
+            message: "Rating deleted successfully",
+            data: { ratingAverage, ratingCount },
+        }, { status: 200 });
+    } catch (error) {
+        console.error("Error deleting rating:", error);
+        return NextResponse.json<ApiResponse>({
+            success: false,
+            message: "An error occurred while deleting the rating",
+        }, { status: 500 });
+    }
+}
+
