@@ -25,8 +25,8 @@ export const updateRecipeSchema = z
     description: z.string().min(1, "Description is required").optional(),
     coverImage: z
       .object({
-        coverImageURL: z.string().url("Invalid URL"),
-        coverImagePublicId: z.string().min(1),
+        coverImageURL: z.string().url("Invalid URL").optional(),
+        coverImagePublicId: z.string().min(1).optional(),
       })
       .optional(),
     ingredients: z

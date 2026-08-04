@@ -11,7 +11,7 @@ import axios from "axios";
 import Image from 'next/image';
 import { UserDocument } from '@/models/user.model';
 import RecipeCard from '@/components/shell/recipes/RecipeCard';
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -133,10 +133,27 @@ const page = () => {
             difficulty: recipe.difficulty,
         });
     }, [recipe, form]);
+    const onSubmit = async (data: UpdateRecipeInput) => {
+        try {
+            const response = await axios.patch<ApiResponse>(`/api/recipe/${id}`, data);
+            if (response.status === 200) {
+                setRecipe(response.data.data);
+                toast.success("Recipe updated successfully!");
+                setIsEditing(false);
+            }
+        } catch (error) {
+            console.error("Error updating recipe:", error);
+            toast.error("Failed to update recipe. Please try again.");
+        }
+    };
+    const onInvalid = (errors: FieldErrors<UpdateRecipeInput>) => {
+        console.error("Validation failed:", errors)
+    }
+
     return (
         <main
             className="w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop pt-6 md:pt-12 pb-xl"  >
-            {<>
+            <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
                 <article
                     className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden mb-12" >
                     <div className="w-full h-64 md:h-120 bg-surface-variant relative">
@@ -250,12 +267,26 @@ const page = () => {
                                 label="Add to meal plan"
                             />
                             {session?.user?._id === author?._id && (
-                                <SecondaryButton
-                                    fontSize="medium"
-                                    icon="edit"
-                                    label="Edit Recipe"
-                                    onClick={() => setIsEditing(true)}
-                                />
+                                isEditing ? (<>
+                                    <PrimaryButton
+                                        fontSize="medium"
+                                        icon="save"
+                                        label="Save Changes"
+                                        type="submit"
+                                    />
+                                    <SecondaryButton
+                                        fontSize="medium"
+                                        icon="cancel"
+                                        label="Cancel"
+                                        onClick={() => setIsEditing(false)}
+                                    />
+                                </>) :
+                                    (<SecondaryButton
+                                        fontSize="medium"
+                                        icon="edit"
+                                        label="Edit Recipe"
+                                        onClick={() => setIsEditing(true)}
+                                    />)
                             )}
 
 
@@ -372,7 +403,7 @@ const page = () => {
                                         <p className="font-headline-sm text-primary-container">{index + 1}.</p>
                                         <p className="text-body-md text-on-surface ">
                                             <textarea
-                                                className="form-input-text font-body-md text-body-md !w-full resize-none"
+                                                className="form-input-text font-body-md text-body-md w-full! resize-none"
                                                 placeholder="Explain this step..."
                                                 rows={2}
                                                 defaultValue={step?.text}
@@ -383,7 +414,7 @@ const page = () => {
                                 ) : (
 
                                     <li key={index} className="flex  items-center  gap-4">
-                                        <p className="font-headline-sm text-primary-container">{index+1}.</p>
+                                        <p className="font-headline-sm text-primary-container">{index + 1}.</p>
                                         <p className="text-body-md text-on-surface ">
                                             {step?.text}
                                         </p>
@@ -471,7 +502,8 @@ const page = () => {
 
                         </div>
                     </div>
-                </section></>}
+                </section>
+            </form>
 
             <section className="mb-xl border-t border-outline-variant/50 pt-12">
                 <h2 className="text-headline-sm font-headline-sm text-on-surface mb-8">
