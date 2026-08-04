@@ -19,6 +19,7 @@ import { Spinner } from "@/components/Spinner";
 import { getErrorMessage } from "@/helpers/getErrorMessage";
 import PrimaryButton from "@/components/PrimaryButton";
 import SecondaryButton from "@/components/SecondaryButton";
+import useFetch from "@/hooks/useFetch";
 
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5MB
@@ -35,12 +36,15 @@ const ProfilePage = () => {
   const session = useSession();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [userData, setUserData] = useState<UserDocument | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [userData, setUserData] = useState<UserDocument | null>(null);
   const [followerCount, setFollowerCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
+  const { data: userDataResponse, loading: userDataLoading, error: userDataError } = useFetch<UserDocument>(`/api/profile/${session?.data?.user?.username}`, {}, setUserData);
+  
+
   const form = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
@@ -64,27 +68,7 @@ const ProfilePage = () => {
   const watchedUsername = watch("username");
   const debouncedUsername = useDebounce(watchedUsername, USERNAME_CHECK_DEBOUNCE_MS);
 
-  // --- fetch profile on session load ---------------------------------------
-  useEffect(() => {
-    const username = session?.data?.user?.username;
-    if (!username) return;
 
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await axios.get<ApiResponse>(
-          `/api/profile/${username}`
-        );
-        if (!cancelled) setUserData(response.data.data);
-      } catch (error) {
-        if (!cancelled) toast.error(getErrorMessage(error, "Failed to load profile."));
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [session?.data?.user?.username]);
 
   // --- keep form in sync once userData arrives/changes ---------------------
   useEffect(() => {
@@ -214,30 +198,9 @@ const ProfilePage = () => {
 
   const isSaveDisabled =
     isSubmitting || usernameStatus === "checking" || usernameStatus === "taken";
-  useEffect(() => {
-    const fetchFollowerCount = async () => {
-      if (!userData?._id) return;
-      try {
-        const response = await axios.get<ApiResponse>(`/api/users/${userData?._id.toString()}/followers`);
-        setFollowerCount(response.data.data.count);
-      } catch (error) {
-        console.error(getErrorMessage(error, "Failed to fetch follower count."));
-      }
-    };
 
-    const fetchFollowingCount = async () => {
-      if (!userData?._id) return;
-      try {
-        const response = await axios.get<ApiResponse>(`/api/users/${userData?._id.toString()}/following`);
-        setFollowingCount(response.data.data.count);
-      } catch (error) {
-        console.error(getErrorMessage(error, "Failed to fetch following count."));
-      }
-    };
-
-    fetchFollowerCount();
-    fetchFollowingCount();
-  }, [userData?._id]);
+  const { data: followerData, loading: followerLoading, error: followerError } = useFetch<{count: number}>(`/api/users/${userData?._id.toString()}/followers`);
+  const { data: followingData, loading: followingLoading, error: followingError } = useFetch<{count: number}>(`/api/users/${userData?._id.toString()}/following`);
   return (
     <>
       <section className="col-span-4 md:col-span-12 flex flex-col md:flex-row items-center md:items-start gap-lg mb-xl mt-lg">
@@ -291,7 +254,7 @@ const ProfilePage = () => {
             </div>
             <div className="flex flex-col items-center md:items-start">
               <span className="text-label-md text-on-surface">
-                {followerCount}
+                {followerData?.count}
               </span>
               <span className="font-label-sm text-label-sm text-on-surface-variant">
                 Followers
@@ -299,7 +262,7 @@ const ProfilePage = () => {
             </div>
             <div className="flex flex-col items-center md:items-start">
               <span className="text-label-md text-on-surface">
-                {followingCount}
+                {followingData?.count}
               </span>
               <span className="font-label-sm text-label-sm text-on-surface-variant">
                 Following
