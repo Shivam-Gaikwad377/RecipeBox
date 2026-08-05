@@ -24,7 +24,7 @@ const page = () => {
     const [author, setAuthor] = useState<UserDocument | null>(null);
     const [followers, setFollowers] = useState<{ count: number } | null>({ count: 0 });
     const [isEditing, setIsEditing] = useState(false)
-    const [moreRecipes, setMoreRecipes] = useState<{total: number, recipes: RecipeDocument[]} | null>(null);
+    const [moreRecipes, setMoreRecipes] = useState<{ total: number, recipes: RecipeDocument[] } | null>(null);
     const [isFollowing, setIsFollowing] = useState<{ isFollowing: boolean } | null>(null);
     const form = useForm<UpdateRecipeInput, unknown, UpdateRecipeOutput>({
         resolver: zodResolver(updateRecipeSchema),
@@ -65,7 +65,7 @@ const page = () => {
 
     const { loading: followerLoading, error: followerError } = useFetch<{ count: number }>(`/api/users/${author?._id}/followers`, {}, setFollowers);
 
-    const { loading: moreRecipesLoading, error: moreRecipesError } = useFetch<{total: number, recipes: RecipeDocument[]}>(`/api/users/${author?._id}/recipes`, {}, setMoreRecipes);
+    const { loading: moreRecipesLoading, error: moreRecipesError } = useFetch<{ total: number, recipes: RecipeDocument[] }>(`/api/users/${author?._id}/recipes`, {}, setMoreRecipes);
     const { loading: isFollowingLoading, error: isFollowingError } = useFetch<{ isFollowing: boolean }>(`/api/users/${author?._id}/follow/${session?.user?._id}`, {}, setIsFollowing);
 
     const handleFollow = async () => {
