@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import useFetch from '@/hooks/useFetch';
+import { RatingInput } from '@/components/shell/recipes/Rating';
 const page = () => {
     const [recipe, setRecipe] = useState<RecipeDocument | null>(null);
     const { data: session } = useSession();
@@ -26,6 +27,7 @@ const page = () => {
     const [isEditing, setIsEditing] = useState(false)
     const [moreRecipes, setMoreRecipes] = useState<{ total: number, recipes: RecipeDocument[] } | null>(null);
     const [isFollowing, setIsFollowing] = useState<{ isFollowing: boolean } | null>(null);
+    const [showRating, setShowRating] = useState(false);
     const form = useForm<UpdateRecipeInput, unknown, UpdateRecipeOutput>({
         resolver: zodResolver(updateRecipeSchema),
         defaultValues: {
@@ -216,13 +218,19 @@ const page = () => {
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
-                                <span
-                                    className="material-symbols-outlined text-primary-container"
-                                    data-icon="star"
-                                    data-weight="fill"
-                                    style={{ fontVariationSettings: '"FILL" 1' }}>star</span>
+                               
+                                    <span
+                                        onClick={() => setShowRating(true)}
+                                        className="material-symbols-outlined text-primary-container"
+                                        data-icon="star"
+                                        data-weight="fill"
+                                        style={{ fontVariationSettings: '"FILL" 1' }}>star</span>
+                               
                                 <span className="font-semibold text-body-md">4.6</span>
                                 <span className="text-on-surface-variant text-label-sm">(214 ratings)</span>
+                                {showRating && (
+                                    <RatingInput recipeId={recipe?._id.toString()} initialValue={null} />
+                                )}
                             </div>
                         </div>
 
@@ -564,6 +572,7 @@ const page = () => {
                         ))
                     }
                 </div>
+                
             </section>
         </main >
     )
