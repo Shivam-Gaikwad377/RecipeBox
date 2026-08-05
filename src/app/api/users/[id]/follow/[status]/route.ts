@@ -6,7 +6,10 @@ import { connectToDatabase } from "@/lib/dbConfig";
 import { Follow } from "@/models/following.model";
 import ApiResponse from "@/types/ApiResponse";
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+export async function GET(request: Request, { params }: RouteContext) {
     try{
         const session = await getServerSession(authOptions);
         const { id } = await params;

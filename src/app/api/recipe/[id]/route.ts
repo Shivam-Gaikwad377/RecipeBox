@@ -6,7 +6,12 @@ import { connectToDatabase } from "@/lib/dbConfig";
 import { Recipe } from "@/models/recipe.model";
 import ApiResponse from "@/types/ApiResponse";
 import { updateRecipeSchema } from "@/schemas/updateRecipe.schema";
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+
+
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+export async function GET(request: Request, { params }: RouteContext) {
     try {
         const recipeId = (await params).id;
         if (!isValidObjectId(recipeId)) {
@@ -43,7 +48,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: Request, { params }: RouteContext) {
     try {
         const session = await getServerSession(authOptions);
         const userId = session?.user?._id;
