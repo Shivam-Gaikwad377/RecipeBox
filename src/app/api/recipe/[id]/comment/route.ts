@@ -64,3 +64,28 @@ export async function POST(request: Request, { params }: RouteContext) {
 
     }
 }
+
+export async function GET(request: Request, { params }: RouteContext) {
+
+    try {
+        const recipeId = (await params).id;
+        if (!isValidObjectId(recipeId)) {
+            return NextResponse.json(
+                { success: false, message: "Invalid recipe ID" },
+                { status: 400 }
+            );
+        }
+        await connectToDatabase();
+        const comments = await Comment.find({ recipe: recipeId }).populate("author", "name username avatar").sort({ createdAt: -1 });
+        return NextResponse.json(
+            { success: true, message: "Comments fetched successfully", data: comments },
+            { status: 200 }
+        );
+    } catch (error) {
+        console.error("Error fetching comments:", error);
+        return NextResponse.json(
+            { success: false, message: "Internal Server Error" },
+            { status: 500 }
+        );
+    }
+}
