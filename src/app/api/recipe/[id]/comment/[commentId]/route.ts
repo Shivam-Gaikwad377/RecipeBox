@@ -66,3 +66,48 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
         );
     }
 }
+
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
+    try {
+        const session = await getServerSession(authOptions);
+        const userId = session?.user?._id;
+        if (!userId) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "You must be logged in to delete a comment" },
+                { status: 401 }
+            );
+        }
+
+        const { id: recipeId, commentId } = await params;
+        if (!isValidObjectId(recipeId) || !isValidObjectId(commentId)) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid recipe or comment ID" },
+                { status: 400 }
+            );
+        }
+
+        await connectToDatabase();
+
+        const comment = await Comment.findOneAndDelete({ _id: commentId, recipe: recipeId, author: userId });
+
+        if (!comment) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Comment not found or you are not authorized to delete it" },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json<ApiResponse>(
+            { success: true, message: "Comment deleted successfully" },
+            { status: 200 }
+        );
+
+    } catch (error) {
+        console.error("Error deleting comment:", error);
+        return NextResponse.json<ApiResponse>(
+            { success: false, message: "Internal Server Error" },
+            { status: 500 }
+        );
+    }
+
+}
