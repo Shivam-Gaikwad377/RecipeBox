@@ -5,7 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/options";
 import { connectToDatabase } from "@/lib/dbConfig";
 import { isValidObjectId } from "mongoose";
-
+import ApiResponse from "@/types/ApiResponse";
 type RouteContext = {
     params: Promise<{ id: string }>;
 };
@@ -16,7 +16,7 @@ export async function POST(request: Request, { params }: RouteContext) {
         const session = await getServerSession(authOptions);
         const userId = session?.user?._id;
         if (!userId) {
-            return NextResponse.json(
+            return NextResponse.json<ApiResponse>(
                 { success: false, message: "You must be logged in to post a comment" },
                 { status: 401 }
             );
@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: RouteContext) {
 
         const recipeId = (await params).id;
         if (!isValidObjectId(recipeId)) {
-            return NextResponse.json(
+            return NextResponse.json<ApiResponse>(
                 { success: false, message: "Invalid recipe ID" },
                 { status: 400 }
             );
@@ -35,7 +35,7 @@ export async function POST(request: Request, { params }: RouteContext) {
 
         if (!parsedData.success) {
             const errorMessages = parsedData.error.issues.map(err => err.message).join(", ");
-            return NextResponse.json(
+            return NextResponse.json<ApiResponse>(
                 { success: false, message: `Validation failed: ${errorMessages}` },
                 { status: 400 }
             );
@@ -50,14 +50,14 @@ export async function POST(request: Request, { params }: RouteContext) {
 
         const savedComment = await newComment.save();
 
-        return NextResponse.json(
+        return NextResponse.json<ApiResponse>(
             { success: true, message: "Comment posted successfully", data: savedComment },
             { status: 201 }
         );
 
     } catch (error) {
         console.error("Error posting comment:", error);
-        return NextResponse.json(
+        return NextResponse.json<ApiResponse>(
             { success: false, message: "Internal Server Error" },
             { status: 500 }
         );
@@ -70,20 +70,20 @@ export async function GET(request: Request, { params }: RouteContext) {
     try {
         const recipeId = (await params).id;
         if (!isValidObjectId(recipeId)) {
-            return NextResponse.json(
+            return NextResponse.json<ApiResponse>(
                 { success: false, message: "Invalid recipe ID" },
                 { status: 400 }
             );
         }
         await connectToDatabase();
         const comments = await Comment.find({ recipe: recipeId }).populate("author", "name username avatar").sort({ createdAt: -1 });
-        return NextResponse.json(
+        return NextResponse.json<ApiResponse>(
             { success: true, message: "Comments fetched successfully", data: comments },
             { status: 200 }
         );
     } catch (error) {
         console.error("Error fetching comments:", error);
-        return NextResponse.json(
+        return NextResponse.json<ApiResponse>(
             { success: false, message: "Internal Server Error" },
             { status: 500 }
         );
