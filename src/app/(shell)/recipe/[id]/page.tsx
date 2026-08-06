@@ -573,12 +573,13 @@ const page = () => {
                 </div>
             </section>
 
-            <section>
-                <h2 className="text-headline-sm font-headline-sm text-on-surface mb-6">
-                    More from {author?.name}
-                </h2>
-                <div
-                    className="flex overflow-x-auto overflow-auto h-auto gap-6 pb-4 scrollbar-hide w-auto -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0"
+            {(session?.user?._id !== author?._id) && (
+                <section>
+                    <h2 className="text-headline-sm font-headline-sm text-on-surface mb-6">
+                        More from {author?.name}
+                    </h2>
+                    <div
+                        className="flex overflow-x-auto overflow-auto h-auto gap-6 pb-4 scrollbar-hide w-auto -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0"
                 >
 
                     {
@@ -588,7 +589,7 @@ const page = () => {
                     }
                 </div>
                 
-            </section>
+            </section>)}
         </main >
     )
 }

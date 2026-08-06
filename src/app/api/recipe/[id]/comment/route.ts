@@ -76,9 +76,31 @@ export async function GET(request: Request, { params }: RouteContext) {
             );
         }
         await connectToDatabase();
-        const comments = await Comment.find({ recipe: recipeId }).populate("author", "name username avatar").sort({ createdAt: -1 });
+        const { searchParams } = new URL(request.url);
+    const offset = Math.max(
+      0,
+      parseInt(searchParams.get("offset") ?? "0", 10) || 0
+    );
+    const limit = Math.min(
+      50,
+      parseInt(searchParams.get("limit") ?? "10", 10) || 10
+    );
+
+
+    const [Comments, total] = await Promise.all([
+      Comment.aggregate([
+        { $match: { recipe: recipeId } },
+        { $lookup: { from: "users", localField: "author", foreignField: "_id", as: "author" } },
+        { $unwind: "$author" },
+        { $sort: { createdAt: -1 } },
+        { $skip: offset },
+        { $limit: limit },
+      ]),
+      Comment.countDocuments({ recipe: recipeId }),
+    ]);
+        
         return NextResponse.json<ApiResponse>(
-            { success: true, message: "Comments fetched successfully", data: comments },
+            { success: true, message: "Comments fetched successfully", data: { comments: Comments, total } },
             { status: 200 }
         );
     } catch (error) {
