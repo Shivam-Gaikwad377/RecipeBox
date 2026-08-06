@@ -129,7 +129,7 @@ export function RatingInput({ recipeId, initialValue, onClose, hasRated }: Ratin
            <div className="flex items-center gap-4 mt-md">
             <PrimaryButton label="Confirm" onClick={() => submitRating(selected)} fontSize="medium" type="button" />
             {hasRated && (
-              <SecondaryButton label="Delete" onClick={() => deleteRating(recipeId)} fontSize="medium" type="button" />
+              <SecondaryButton label="Remove rating" onClick={() => deleteRating(recipeId)} fontSize="medium" type="button" />
             )}
           </div>
         </div>

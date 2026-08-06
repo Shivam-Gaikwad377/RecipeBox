@@ -29,6 +29,7 @@ const page = () => {
     const [isFollowing, setIsFollowing] = useState<{ isFollowing: boolean } | null>(null);
     const [showRating, setShowRating] = useState(false);
     const [userRating, setUserRating] = useState<{ hasRated: boolean; ratingValue?: number } | null>(null);
+    const [distributedRating, setDistributedRating] = useState<{ [key: number]: number } | null>({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
     const form = useForm<UpdateRecipeInput, unknown, UpdateRecipeOutput>({
         resolver: zodResolver(updateRecipeSchema),
         defaultValues: {
@@ -71,6 +72,7 @@ const page = () => {
     const { loading: moreRecipesLoading, error: moreRecipesError } = useFetch<{ total: number, recipes: RecipeDocument[] }>(`/api/users/${author?._id}/recipes`, {}, setMoreRecipes);
     const { loading: isFollowingLoading, error: isFollowingError } = useFetch<{ isFollowing: boolean }>(`/api/users/${author?._id}/follow/${session?.user?._id}`, {}, setIsFollowing);
     const { loading: ratingLoading, error: ratingError } = useFetch<{ hasRated: boolean; ratingValue?: number }>(`/api/recipe/${id}/rating/${session?.user?._id}`, {}, setUserRating);
+    const { loading: distributedRatingLoading, error: distributedRatingError } = useFetch<{ [key: number]: number }>(`/api/recipe/${id}/rating`, {}, setDistributedRating);
     const handleFollow = async () => {
         if (!session?.user?._id) {
             toast.error("You must be logged in to follow users.");
@@ -229,8 +231,8 @@ const page = () => {
                                       star
                                     </span>
                                
-                                <span className="font-semibold text-body-md">4.6</span>
-                                <span className="text-on-surface-variant text-label-sm">(214 ratings)</span>
+                                <span className="font-semibold text-body-md">{recipe?.ratingAverage?.toFixed(1) ?? '0.0'}</span>
+                                <span className="text-on-surface-variant text-label-sm">({recipe?.ratingCount ?? 0} {recipe?.ratingCount === 1 ? 'rating' : 'ratings'})</span>
                                 {showRating && (
                                     <RatingInput
                                         recipeId={recipe?._id.toString() ?? ""}
@@ -500,10 +502,10 @@ const page = () => {
 
                     <div className="shrink-0 text-center md:text-left">
                         <div className="text-display-lg font-display-lg text-on-surface">
-                            4.6
+                            {recipe?.ratingAverage?.toFixed(1) ?? '0.0'}
                         </div>
                         <div className="text-label-sm text-on-surface-variant mt-2">
-                            214 ratings
+                            {recipe?.ratingCount ?? 0} {recipe?.ratingCount === 1 ? 'rating' : 'ratings'}
                         </div>
                     </div>
 
@@ -513,7 +515,7 @@ const page = () => {
                             <div
                                 className="grow h-2 bg-surface-variant rounded-full overflow-hidden"
                             >
-                                <div className="h-full bg-primary" style={{ width: "70%" }}></div>
+                                <div className="h-full bg-primary" style={{ width: `${(distributedRating?.[5] || 0) / Math.max(recipe?.ratingCount || 1, 1) * 100}%` }}></div>
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
@@ -521,7 +523,7 @@ const page = () => {
                             <div
                                 className="grow h-2 bg-surface-variant rounded-full overflow-hidden"
                             >
-                                <div className="h-full bg-primary" style={{ width: "20%" }}></div>
+                                <div className="h-full bg-primary" style={{ width: `${(distributedRating?.[4] || 0) / Math.max(recipe?.ratingCount || 1, 1) * 100}%` }}></div>
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
@@ -529,19 +531,24 @@ const page = () => {
                             <div
                                 className="grow h-2 bg-surface-variant rounded-full overflow-hidden"
                             >
-                                <div className="h-full bg-primary" style={{ width: "5%" }}></div>
+                                <div className="h-full bg-primary" style={{ width: `${(distributedRating?.[3] || 0) / Math.max(recipe?.ratingCount || 1, 1) * 100}%` }}></div>
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
                             <span className="text-label-sm text-on-surface-variant w-4">2</span>
                             <div
                                 className="grow h-2 bg-surface-variant rounded-full overflow-hidden"
-                            ></div>
+                            >
+                                <div className="h-full bg-primary" style={{ width: `${(distributedRating?.[2] || 0) / Math.max(recipe?.ratingCount || 1, 1) * 100}%` }}></div>
+                            </div>
                         </div>
                         <div className="flex items-center gap-4">
                             <span className="text-label-sm text-on-surface-variant w-4">1</span>
                             <div
-                                className="grow h-2 bg-surface-variant rounded-full overflow-hidden"></div>
+                                className="grow h-2 bg-surface-variant rounded-full overflow-hidden"
+                            >
+                                <div className="h-full bg-primary" style={{ width: `${(distributedRating?.[1] || 0) / Math.max(recipe?.ratingCount || 1, 1) * 100}%` }}></div>
+                            </div>
                         </div>
                     </div>
                 </div>

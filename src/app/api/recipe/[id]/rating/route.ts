@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { RatingDocument } from "@/models/rating.model";
 import { Rating } from "@/models/rating.model";
 import { ratingSchema } from "@/schemas/rating.schema";
-import { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/options";
 import { connectToDatabase } from "@/lib/dbConfig";
@@ -115,4 +115,52 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
         }, { status: 500 });
     }
 }
+
+export async function GET(req: NextRequest, { params }: RouteContext) {
+    try {
+        const recipeId = (await params).id;
+        if (!isValidObjectId(recipeId)) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid recipe id" },
+                { status: 400 }
+            );
+        }
+
+        await connectToDatabase();
+
+        const rating = await Rating.aggregate([
+            { $match: { recipe: new mongoose.Types.ObjectId(recipeId) } },
+            {
+                $group: {
+                    _id: "$value",
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const distributedRatings: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        rating.forEach(r => {
+            distributedRatings[r._id] = r.count;
+        });
+
+        return NextResponse.json<ApiResponse>({
+            success: true,
+            message: "Rating distribution fetched successfully",
+            data: distributedRatings,
+        }, { status: 200 });
+    }
+
+    catch (error) {
+        console.error("Error fetching rating distribution:", error);
+        return NextResponse.json<ApiResponse>({
+            success: false,
+            message: "An error occurred while fetching the rating distribution",
+        }, { status: 500 });
+    }
+
+}
+
+        
+
+
 
