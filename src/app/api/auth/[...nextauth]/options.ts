@@ -44,9 +44,7 @@ export const authOptions: NextAuthOptions = {
             );
           }
           //check if user is verified
-          if (!user.isEmailVerified) {
-            throw new Error("Please verify your email before logging in.");
-          }
+          
 
           //compare provided password with hashed password in database
           const isPasswordValid = await bcrypt.compare(

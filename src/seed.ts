@@ -1,181 +1,93 @@
-import "dotenv/config";
-import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import { User } from "./models/user.model"; // adjust path to your actual model location
-import { Follow } from "./models/following.model"; // adjust path to your actual model location
-
-const MONGODB_URI = process.env.MONGO_URL;
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI is not set in .env");
-}
-
-// your real dev account — preserved on every run, never regenerated
-const MAIN_USER_ID = new mongoose.Types.ObjectId("6a63716c6c4eb95ee3136801");
-
-const FAKE_USER_COUNT = 15;
-const FOLLOWS_PER_USER = 5; // random follows generated among the fake users
-const MAIN_USER_FOLLOWERS_COUNT = 6; // fake users who follow your account
-const MAIN_USER_FOLLOWING_COUNT = 6; // fake users your account follows
-const SALT_ROUNDS = 10;
-
-// small fixed pools instead of a fake-data library — plenty of entropy for
-// 15 seed users once combined with the loop index, no extra dependency
-const FIRST_NAMES = [
-  "Aarav", "Vivaan", "Aditya", "Ishaan", "Kabir",
-  "Ananya", "Diya", "Myra", "Saanvi", "Anaya",
-  "Rohan", "Kunal", "Neha", "Priya", "Sara",
-];
-const LAST_NAMES = [
-  "Sharma", "Verma", "Patel", "Gupta", "Reddy",
-  "Nair", "Iyer", "Singh", "Rao", "Mehta",
-];
-const BIOS = [
-  "Home cook experimenting with weeknight dinners.",
-  "Baking enthusiast, mostly sourdough these days.",
-  "Trying to eat more vegetables in 2026.",
-  "Collecting family recipes before they're lost.",
-  "Weekend meal-prepper, weekday chaos.",
-];
-
-function randomItem<T>(arr: readonly T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-// Fisher-Yates — sort(() => Math.random() - 0.5) is a common shortcut here
-// but it's a biased shuffle; this is the correct O(n) way to get an
-// unbiased random ordering, which is what we need to pick non-overlapping
-// follower/following sets for the main account below.
-function shuffle<T>(arr: readonly T[]): T[] {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
-// index suffix guarantees username/email uniqueness even when the random
-// first+last combo repeats across two of the fifteen users
-function buildUser(index: number, passwordHash: string) {
-  const first = randomItem(FIRST_NAMES);
-  const last = randomItem(LAST_NAMES);
-  const username = `${first}.${last}.${index}`.toLowerCase();
-  return {
-    name: `${first} ${last}`,
-    username,
-    email: `${username}@example.com`,
-    passwordHash,
-    bio: randomItem(BIOS),
-    isEmailVerified: true, // skip the verification flow for seed users
-  };
-}
-
-async function seed() {
-  await mongoose.connect(MONGODB_URI!);
-  console.log("connected to db");
-
-  // wipe fake users and all follows, but never touch the main account —
-  // Follow docs are cheap to regenerate from scratch each run, User accounts aren't
-  await Promise.all([
-    User.deleteMany({ _id: { $ne: MAIN_USER_ID } }),
-    Follow.deleteMany({}),
-  ]);
-
-  // fail loudly if the ID is wrong or you're pointed at the wrong database,
-  // instead of silently seeding a graph with no connection to your account
-  const mainUserExists = await User.exists({ _id: MAIN_USER_ID });
-  if (!mainUserExists) {
-    throw new Error(
-      `Main user ${MAIN_USER_ID.toString()} not found — check MAIN_USER_ID or your MONGODB_URI`
-    );
-  }
-
-  // hash once and reuse — this is throwaway seed data, not real user credentials,
-  // so paying the bcrypt cost 15 times for the same password buys nothing
-  const passwordHash = await bcrypt.hash("Test@1234", SALT_ROUNDS);
-
-  const userDocs = Array.from({ length: FAKE_USER_COUNT }, (_, i) =>
-    buildUser(i, passwordHash)
-  );
-
-  const users = await User.insertMany(userDocs);
-  console.log(`seeded ${users.length} users`);
-
-  // build follow pairs in memory first, deduped, so insertMany doesn't hit
-  // the unique index on the happy path — we test that index separately below
-  const seenPairs = new Set<string>();
-  const followDocs: { follower: mongoose.Types.ObjectId; following: mongoose.Types.ObjectId }[] = [];
-
-  for (const user of users) {
-    let created = 0;
-    let attempts = 0;
-    // capped attempts so a small FAKE_USER_COUNT can't spin forever hunting for unique targets
-    while (created < FOLLOWS_PER_USER && attempts < FOLLOWS_PER_USER * 4) {
-      attempts++;
-      const target = users[Math.floor(Math.random() * users.length)];
-
-      if (target._id.equals(user._id)) continue; // no self-follow
-
-      const key = `${user._id}_${target._id}`;
-      if (seenPairs.has(key)) continue;
-
-      seenPairs.add(key);
-      followDocs.push({ follower: user._id, following: target._id });
-      created++;
-    }
-  }
-
-  // give the main account real followers and a real following list to test
-  // against — non-overlapping slices of a shuffled pool so no one shows up
-  // in both lists (a user can still end up in neither, that's fine)
-  const requiredForMain = MAIN_USER_FOLLOWERS_COUNT + MAIN_USER_FOLLOWING_COUNT;
-  if (users.length < requiredForMain) {
-    throw new Error(
-      `need at least ${requiredForMain} fake users to satisfy main-user follow counts, only have ${users.length}`
-    );
-  }
-
-  const pool = shuffle(users);
-  const followersOfMain = pool.slice(0, MAIN_USER_FOLLOWERS_COUNT);
-  const followingOfMain = pool.slice(
-    MAIN_USER_FOLLOWERS_COUNT,
-    MAIN_USER_FOLLOWERS_COUNT + MAIN_USER_FOLLOWING_COUNT
-  );
-
-  for (const u of followersOfMain) {
-    followDocs.push({ follower: u._id, following: MAIN_USER_ID });
-  }
-  for (const u of followingOfMain) {
-    followDocs.push({ follower: MAIN_USER_ID, following: u._id });
-  }
-
-  await Follow.insertMany(followDocs);
-  console.log(`seeded ${followDocs.length} follow relationships`);
-  console.log(
-    `  main account: ${followersOfMain.length} followers, ${followingOfMain.length} following`
-  );
-
-  // verify the unique index is actually doing its job — a seed script that
-  // inserts follows without ever exercising the constraint hasn't tested it
-  try {
-    await Follow.create({
-      follower: followDocs[0].follower,
-      following: followDocs[0].following,
-    });
-    console.error("FAIL: duplicate follow was NOT rejected — check the unique index");
-  } catch (err: any) {
-    if (err?.code === 11000) {
-      console.log("OK: unique index correctly rejected a duplicate follow pair");
-    } else {
-      throw err;
-    }
-  }
-
-  await mongoose.disconnect();
-  console.log("done");
-}
-
-seed().catch((err) => {
-  console.error(err);
-  process.exit(1);
+import mongoose, { Schema, model } from "mongoose";
+import { faker } from "@faker-js/faker";
+import dotenv from "dotenv";
+import { User } from "@/models/user.model"; // Adjust the import path as necessary
+import { Recipe } from "@/models/recipe.model"; // Adjust the import path as necessary
+dotenv.config();
+// 1. Define Mongoose Schemas
+const ingredientSchema = new Schema({
+  name: { type: String, required: true },
+  quantity: { type: Number, required: true },
+  unit: String,
 });
+
+const instructionSchema = new Schema({
+  order: { type: Number, required: true },
+  text: { type: String, required: true },
+});
+
+
+
+// 2. User IDs List
+const userIds = [
+  "6a74b1f477b4521425cc601c", "6a74b1f477b4521425cc601d", "6a74b1f477b4521425cc601e",
+  "6a74b1f477b4521425cc601f", "6a74b1f477b4521425cc6020", "6a74b1f477b4521425cc6021",
+  "6a74b1f477b4521425cc6022", "6a74b1f477b4521425cc6023", "6a74b1f477b4521425cc6024",
+  "6a74b1f477b4521425cc6025", "6a74b1f477b4521425cc6026", "6a74b1f477b4521425cc6027",
+  "6a74b1f477b4521425cc6028", "6a74b1f477b4521425cc6029", "6a74b1f477b4521425cc602a",
+  "6a74b1f477b4521425cc602b", "6a74b1f477b4521425cc602c", "6a74b1f477b4521425cc602d",
+  "6a74b1f477b4521425cc602e", "6a74b1f477b4521425cc602f", "6a74b1f477b4521425cc6030",
+  "6a74b1f477b4521425cc6031", "6a74b1f477b4521425cc6032", "6a74b1f477b4521425cc6033",
+  "6a74b1f477b4521425cc6034", "6a74b1f477b4521425cc6035", "6a74b1f477b4521425cc6036",
+  "6a74b1f477b4521425cc6037", "6a74b1f477b4521425cc6038", "6a74b1f477b4521425cc6039",
+  "6a74b1f477b4521425cc603a", "6a74b1f477b4521425cc603b", "6a74b1f477b4521425cc603c",
+  "6a74b1f477b4521425cc603d", "6a74b1f477b4521425cc603e", "6a74b1f477b4521425cc603f",
+  "6a74b1f477b4521425cc6040", "6a74b1f477b4521425cc6041", "6a74b1f477b4521425cc6042",
+  "6a74b1f477b4521425cc6043", "6a74b1f477b4521425cc6044", "6a74b1f477b4521425cc6045",
+  "6a74b1f477b4521425cc6046", "6a74b1f477b4521425cc6047", "6a74b1f477b4521425cc6048",
+  "6a74b1f477b4521425cc6049", "6a74b1f477b4521425cc604a", "6a74b1f477b4521425cc604b",
+  "6a74b826d3880b84f2050f0c"
+];
+
+// 3. Generator Helper
+const generateRecipeForUser = (userId: string) => ({
+  author: userId,
+  title: faker.food.dish(),
+  description: faker.food.description(),
+  ingredients: Array.from({ length: faker.number.int({ min: 3, max: 7 }) }, () => ({
+    name: faker.food.ingredient(),
+    quantity: faker.number.int({ min: 1, max: 500 }),
+    unit: faker.helpers.arrayElement(["g", "kg", "ml", "cup", "tbsp", "tsp"]),
+  })),
+  instructions: Array.from({ length: faker.number.int({ min: 3, max: 6 }) }, (_, i) => ({
+    order: i + 1,
+    text: faker.lorem.sentence(),
+  })),
+  nutritionalInfo: {
+    calories: faker.number.int({ min: 150, max: 800 }),
+    protein: faker.number.int({ min: 5, max: 50 }),
+    carbs: faker.number.int({ min: 10, max: 100 }),
+    fat: faker.number.int({ min: 2, max: 40 }),
+  },
+  cookTime: faker.number.int({ min: 10, max: 90 }),
+  prepTime: faker.number.int({ min: 5, max: 30 }),
+  servings: faker.number.int({ min: 1, max: 6 }),
+  difficulty: faker.helpers.arrayElement(["Easy", "Medium", "Hard"]),
+  tags: [faker.food.ethnicCategory(), faker.helpers.arrayElement(["Quick", "Healthy", "Vegan"])],
+});
+
+// 4. Seed Function
+async function runSeed() {
+  const MONGO_URI = process.env.MONGO_URL || "mongodb://localhost:27017/your_db_name"; // Replace with your URI
+
+  try {
+    await mongoose.connect(MONGO_URI);
+    console.log("Connected to MongoDB.");
+
+    const allRecipes = userIds.flatMap((id) => {
+      const count = faker.number.int({ min: 4, max: 5 });
+      return Array.from({ length: count }, () => generateRecipeForUser(id));
+    });
+
+    console.log(`Inserting ${allRecipes.length} recipes into the database...`);
+    await Recipe.insertMany(allRecipes);
+
+    console.log("Seeding complete!");
+  } catch (error) {
+    console.error("Failed to seed database:", error);
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+runSeed();

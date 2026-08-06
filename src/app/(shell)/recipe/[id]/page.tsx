@@ -204,7 +204,7 @@ const page = () => {
                                         {followers?.count} followers
                                     </p>
                                 </div>
-                                {session?.user?.id === author?._id && (
+                                {session?.user?.id !== author?._id && (
                                     isFollowing?.isFollowing ? (
                                         <SecondaryButton
                                             fontSize="small"
