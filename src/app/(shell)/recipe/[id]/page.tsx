@@ -222,7 +222,7 @@ const page = () => {
                                
                                     <span
                                         onClick={() => setShowRating(true)}
-                                        className="material-symbols-outlined text-primary-container"
+                                        className="material-symbols-outlined cursor-pointer text-primary-container"
                                         data-icon="star"
                                         data-weight={userRating?.hasRated ? "filled" : "regular"}
                                         style={{ fontVariationSettings: `"FILL" ${userRating?.hasRated ? "1" : "0"}` }}>
@@ -231,7 +231,13 @@ const page = () => {
                                
                                 <span className="font-semibold text-body-md">4.6</span>
                                 <span className="text-on-surface-variant text-label-sm">(214 ratings)</span>
-                               
+                                {showRating && (
+                                    <RatingInput
+                                        recipeId={recipe?._id.toString() ?? ""}
+                                        initialValue={userRating?.ratingValue ?? null}
+                                        onClose={() => setShowRating(false)}
+                                    />
+                                )}
                             </div>
                         </div>
 
