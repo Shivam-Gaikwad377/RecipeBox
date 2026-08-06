@@ -236,6 +236,7 @@ const page = () => {
                                         recipeId={recipe?._id.toString() ?? ""}
                                         initialValue={userRating?.ratingValue ?? null}
                                         onClose={() => setShowRating(false)}
+                                        hasRated={userRating?.hasRated ?? false}
                                     />
                                 )}
                             </div>

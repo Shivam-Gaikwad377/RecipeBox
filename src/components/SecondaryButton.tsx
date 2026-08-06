@@ -6,6 +6,7 @@ type SecondaryButtonProps = {
   onClick?: () => void;
   label: string;
   icon?: string;
+  type?: "button" | "submit" | "reset";
   fontSize?: FontSize;
 };
 
@@ -22,10 +23,11 @@ const SecondaryButton = ({
   label,
   icon,
   fontSize = "medium",
+  type = "button"
 }: SecondaryButtonProps) => {
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
       className={`rounded-full border-2 py-0 border-primary text-primary text-label-md hover:bg-primary-fixed transition-colors hover-lift flex items-center gap-xs bg-surface-container-lowest md:px-4 ${SIZE_CLASSES[fontSize]}`}
     >

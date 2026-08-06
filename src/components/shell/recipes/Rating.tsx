@@ -4,18 +4,20 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PrimaryButton from '@/components/PrimaryButton';
 import { toast } from 'sonner';
-
+import SecondaryButton from '@/components/SecondaryButton';
 import axios from 'axios';
 
 interface RatingInputProps {
   recipeId: string | undefined;
   initialValue: number | null; // null = user hasn't rated yet
   onClose: () => void;
+  hasRated?: boolean;
+  
 }
 
 const STAR_VALUES = [1, 2, 3, 4, 5] as const;
 
-export function RatingInput({ recipeId, initialValue, onClose }: RatingInputProps) {
+export function RatingInput({ recipeId, initialValue, onClose, hasRated }: RatingInputProps) {
   const [selected, setSelected] = useState(initialValue ?? 0); // pending, user-driven
   const [saved, setSaved] = useState(initialValue ?? 0);       // last confirmed value
   const [hovered, setHovered] = useState<number | null>(null);
@@ -43,6 +45,28 @@ export function RatingInput({ recipeId, initialValue, onClose }: RatingInputProp
       setSelected(previous); // roll back the visible selection too
       setError('Could not save your rating.');
       toast.error('Could not save your rating.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function deleteRating(recipeId: string | undefined) {
+    if (isSubmitting) return;
+
+    setSaved(0); // optimistic
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      await axios.delete(`/api/recipe/${recipeId}/rating`);
+      toast.success('Rating deleted!');
+      router.refresh();
+      onClose();
+    }
+    catch {
+      setSaved(selected);
+      setError('Could not delete your rating.');
+      toast.error('Could not delete your rating.');
     } finally {
       setIsSubmitting(false);
     }
@@ -104,9 +128,12 @@ export function RatingInput({ recipeId, initialValue, onClose }: RatingInputProp
         </fieldset>
            <div className="flex items-center gap-4 mt-md">
             <PrimaryButton label="Confirm" onClick={() => submitRating(selected)} fontSize="medium" type="button" />
-            
+            {hasRated && (
+              <SecondaryButton label="Delete" onClick={() => deleteRating(recipeId)} fontSize="medium" type="button" />
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    
   );
 }
