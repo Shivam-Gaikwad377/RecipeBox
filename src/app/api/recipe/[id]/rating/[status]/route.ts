@@ -11,7 +11,7 @@ type RouteParams = {
 export async function GET( request: NextRequest, { params }: { params: RouteParams } ) {
 
     try{
-        const { id, status: userId } = params;
+        const { id, status: userId } = await params;
         if(!isValidObjectId(id)){
             return NextResponse.json({ message: "Invalid recipe id" }, { status: 400 });
         }

@@ -28,6 +28,7 @@ const page = () => {
     const [moreRecipes, setMoreRecipes] = useState<{ total: number, recipes: RecipeDocument[] } | null>(null);
     const [isFollowing, setIsFollowing] = useState<{ isFollowing: boolean } | null>(null);
     const [showRating, setShowRating] = useState(false);
+    const [userRating, setUserRating] = useState<{ hasRated: boolean; ratingValue?: number } | null>(null);
     const form = useForm<UpdateRecipeInput, unknown, UpdateRecipeOutput>({
         resolver: zodResolver(updateRecipeSchema),
         defaultValues: {
@@ -69,7 +70,7 @@ const page = () => {
 
     const { loading: moreRecipesLoading, error: moreRecipesError } = useFetch<{ total: number, recipes: RecipeDocument[] }>(`/api/users/${author?._id}/recipes`, {}, setMoreRecipes);
     const { loading: isFollowingLoading, error: isFollowingError } = useFetch<{ isFollowing: boolean }>(`/api/users/${author?._id}/follow/${session?.user?._id}`, {}, setIsFollowing);
-
+    const { loading: ratingLoading, error: ratingError } = useFetch<{ hasRated: boolean; ratingValue?: number }>(`/api/recipe/${id}/rating/${session?.user?._id}`, {}, setUserRating);
     const handleFollow = async () => {
         if (!session?.user?._id) {
             toast.error("You must be logged in to follow users.");
@@ -223,14 +224,14 @@ const page = () => {
                                         onClick={() => setShowRating(true)}
                                         className="material-symbols-outlined text-primary-container"
                                         data-icon="star"
-                                        data-weight="fill"
-                                        style={{ fontVariationSettings: '"FILL" 1' }}>star</span>
+                                        data-weight={userRating?.hasRated ? "filled" : "regular"}
+                                        style={{ fontVariationSettings: `"FILL" ${userRating?.hasRated ? "1" : "0"}` }}>
+                                      star
+                                    </span>
                                
                                 <span className="font-semibold text-body-md">4.6</span>
                                 <span className="text-on-surface-variant text-label-sm">(214 ratings)</span>
-                                {showRating && (
-                                    <RatingInput recipeId={recipe?._id.toString()} initialValue={null} />
-                                )}
+                               
                             </div>
                         </div>
 
