@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import PrimaryButton from '@/components/PrimaryButton';
+import { toast } from 'sonner';
+
 import axios from 'axios';
 
 interface RatingInputProps {
@@ -13,36 +16,33 @@ interface RatingInputProps {
 const STAR_VALUES = [1, 2, 3, 4, 5] as const;
 
 export function RatingInput({ recipeId, initialValue, onClose }: RatingInputProps) {
-  const [value, setValue] = useState(initialValue ?? 0);
+  const [selected, setSelected] = useState(initialValue ?? 0); // pending, user-driven
+  const [saved, setSaved] = useState(initialValue ?? 0);       // last confirmed value
   const [hovered, setHovered] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const displayValue = hovered ?? value;
-
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  const displayValue = hovered ?? selected;
 
   async function submitRating(newValue: number) {
-    if (isSubmitting || newValue === value) return;
+    if (isSubmitting || newValue === saved) return;
 
-    const previousValue = value;
-    setValue(newValue);
+    const previous = saved;
+    setSaved(newValue); // optimistic
     setError(null);
     setIsSubmitting(true);
 
     try {
       await axios.post(`/api/recipe/${recipeId}/rating`, { value: newValue });
-      router.refresh(); // re-pulls server-computed avgRating/ratingCount
+      toast.success('Rating saved!');
+      router.refresh();
+      onClose();
     } catch {
-      setValue(previousValue);
+      setSaved(previous);
+      setSelected(previous); // roll back the visible selection too
       setError('Could not save your rating.');
+      toast.error('Could not save your rating.');
     } finally {
       setIsSubmitting(false);
     }
@@ -81,8 +81,8 @@ export function RatingInput({ recipeId, initialValue, onClose }: RatingInputProp
                 type="radio"
                 name={`rating-${recipeId}`}
                 value={star}
-                checked={value === star}
-                onChange={() => submitRating(star)}
+                checked={selected === star}
+                onChange={() => setSelected(star)}
                 onMouseEnter={() => setHovered(star)}
                 className="peer sr-only"
               />
@@ -102,6 +102,10 @@ export function RatingInput({ recipeId, initialValue, onClose }: RatingInputProp
             </span>
           )}
         </fieldset>
+           <div className="flex items-center gap-4 mt-md">
+            <PrimaryButton label="Confirm" onClick={() => submitRating(selected)} fontSize="medium" type="button" />
+            
+        </div>
       </div>
     </div>
   );
