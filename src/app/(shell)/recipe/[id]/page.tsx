@@ -15,6 +15,7 @@ import { useForm, useFieldArray, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import CommentSection from '@/components/shell/recipes/CommentSection';
 import useFetch from '@/hooks/useFetch';
 import { RatingInput } from '@/components/shell/recipes/Rating';
 const page = () => {
@@ -553,24 +554,8 @@ const page = () => {
                     </div>
                 </div>
 
-                <div
-                    className="bg-surface-container-low p-6 rounded-xl border border-outline-variant/30"
-                >
-                    <div className="flex items-start gap-4">
-                        <div
-                            className="w-10 h-10 rounded-full bg-surface-variant shrink-0"
-                        ></div>
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="font-label-sm font-semibold text-on-surface">Amit K</span>
-                                <span className="text-label-sm text-on-surface-variant">• 2 days ago</span>
-                            </div>
-                            <p className="text-body-md text-on-surface">
-                                Turned out perfectly, added extra thyme.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+               
+                <CommentSection recipeId={recipe?._id.toString() ?? ""} />
             </section>
 
             {(session?.user?._id !== author?._id) && (

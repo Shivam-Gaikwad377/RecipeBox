@@ -1,4 +1,4 @@
-import { Comment } from "@/models/comment.model";
+import { Comment, PopulatedCommentDocument } from "@/models/comment.model";
 import { commentSchema } from "@/schemas/comment.schema";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -6,6 +6,7 @@ import { authOptions } from "../../../auth/[...nextauth]/options";
 import { connectToDatabase } from "@/lib/dbConfig";
 import { isValidObjectId } from "mongoose";
 import ApiResponse from "@/types/ApiResponse";
+import {UserDocument} from "@/models/user.model";
 type RouteContext = {
     params: Promise<{ id: string }>;
 };
@@ -88,14 +89,7 @@ export async function GET(request: Request, { params }: RouteContext) {
 
 
     const [Comments, total] = await Promise.all([
-      Comment.aggregate([
-        { $match: { recipe: recipeId } },
-        { $lookup: { from: "users", localField: "author", foreignField: "_id", as: "author" } },
-        { $unwind: "$author" },
-        { $sort: { createdAt: -1 } },
-        { $skip: offset },
-        { $limit: limit },
-      ]),
+      await  Comment.find({ recipe: recipeId }).skip(offset).limit(limit).sort({ createdAt: -1 }).populate("author").exec() as unknown as PopulatedCommentDocument[],
       Comment.countDocuments({ recipe: recipeId }),
     ]);
         

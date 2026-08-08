@@ -1,5 +1,5 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
-
+import { UserDocument } from "./user.model";
 const commentSchema = new Schema(
   {
     recipe: { type: Schema.Types.ObjectId, ref: "Recipe", required: true },
@@ -11,7 +11,15 @@ const commentSchema = new Schema(
 
 commentSchema.index({ recipe: 1, author: 1 }, { unique: true });
 
-export type CommentDocument = InferSchemaType<typeof commentSchema>;
+export type CommentDocument = InferSchemaType<typeof commentSchema> & {
+  _id: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type PopulatedCommentDocument = CommentDocument & {
+  author: UserDocument;
+};
 
 export const Comment: Model<CommentDocument> =
   mongoose.models.Comment || mongoose.model("Comment", commentSchema);
