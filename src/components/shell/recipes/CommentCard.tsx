@@ -1,4 +1,5 @@
 import React from 'react'
+import { getTimeAgo } from '@/helpers/getTimeAgo'
 type CommentCardProps = {
     userName: string
     userAvatarUrl: string
@@ -9,9 +10,10 @@ type CommentCardProps = {
 
 }
 const CommentCard = ({ userName, userAvatarUrl, commentText, timeAgo, likesCount, isAuthor }: CommentCardProps) => {
+    
     return (
         <div className="flex gap-md group">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
                 <div
                     className="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden shadow-sm"
                 >
@@ -24,7 +26,7 @@ const CommentCard = ({ userName, userAvatarUrl, commentText, timeAgo, likesCount
                 </div>
             </div>
             <div
-                className="flex-grow bg-surface p-md rounded-xl border border-surface-container-high shadow-[0_4px_20px_rgba(30,27,24,0.04)]"
+                className="grow bg-surface p-md rounded-xl border border-surface-container-high shadow-[0_4px_20px_rgba(30,27,24,0.04)]"
             >
                 <div className="flex items-center justify-between mb-sm">
                     <div className="flex items-center gap-xs">
@@ -38,7 +40,7 @@ const CommentCard = ({ userName, userAvatarUrl, commentText, timeAgo, likesCount
 
                         <span
                             className="font-label-sm text-label-sm text-on-surface-variant"
-                        >• {timeAgo}</span>
+                        >• {getTimeAgo(timeAgo)}</span>
                     </div>
                 </div>
                 <p

@@ -88,7 +88,7 @@ const CommentSection = ({ recipeId, authorId }: CommentSectionProps) => {
         </div>
 
         <form onSubmit={handleSubmit} className="flex gap-md mb-xl">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <div className="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant shadow-sm">
               <img
                 alt="Current user avatar"
@@ -97,7 +97,7 @@ const CommentSection = ({ recipeId, authorId }: CommentSectionProps) => {
               />
             </div>
           </div>
-          <div className="flex-grow flex flex-col gap-sm">
+          <div className="grow flex flex-col gap-sm">
             <textarea
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
@@ -138,7 +138,7 @@ const CommentSection = ({ recipeId, authorId }: CommentSectionProps) => {
               userName={comment.author?.username}
               userAvatarUrl={comment.author?.avatar?.avatarUrl ?? ""}
               commentText={comment.body}
-              timeAgo={new Date(comment.createdAt).toLocaleDateString()}
+              timeAgo={new Date(comment.createdAt).toISOString()}
               isAuthor={authorId ? comment.author?._id.toString() === authorId : false}
             />
           ))}

@@ -1,108 +1,124 @@
-import mongoose from "mongoose";
+/**
+ * Seeds one Comment per user onto a single recipe.
+ *
+ * Idempotent by design: uses bulkWrite + upsert on (recipe, author), so
+ * re-running this script skips users who already commented instead of
+ * creating duplicates. Note: your Comment schema's {recipe, author} index
+ * is NOT unique at the DB level — this script's idempotency comes from the
+ * upsert filter, not a schema constraint. If you need that guarantee
+ * enforced outside this script too, add `commentSchema.index({ recipe: 1,
+ * author: 1 }, { unique: true })` to comment.model.ts.
+ *
+ * Run: MONGO_URL="<your-uri>" npx tsx scripts/seed-recipe-comments.ts
+ */
+
+import mongoose, { isValidObjectId, type AnyBulkWriteOperation } from "mongoose";
+import { Comment, type CommentDocument } from "@/models/comment.model"; // adjust path to your project
 import dotenv from "dotenv";
-dotenv.config();
-import { Comment } from "./models/comment.model";
+dotenv.config(); // Load environment variables from .env.local
+const RECIPE_ID = "6a74c44fb68d0aacbfe98117";
 
-// Replace with your MongoDB connection string
-const MONGODB_URI = process.env.MONGO_URL || "mongodb://localhost:27017/your-database-name";
-
-const userIds = [
-  "6a74b1f477b4521425cc601a", "6a74b1f477b4521425cc601b", "6a74b1f477b4521425cc601c",
-  "6a74b1f477b4521425cc601d", "6a74b1f477b4521425cc601e", "6a74b1f477b4521425cc601f",
-  "6a74b1f477b4521425cc6020", "6a74b1f477b4521425cc6021", "6a74b1f477b4521425cc6022",
-  "6a74b1f477b4521425cc6023", "6a74b1f477b4521425cc6024", "6a74b1f477b4521425cc6025",
-  "6a74b1f477b4521425cc6026", "6a74b1f477b4521425cc6027", "6a74b1f477b4521425cc6028",
-  "6a74b1f477b4521425cc6029", "6a74b1f477b4521425cc602a", "6a74b1f477b4521425cc602b",
-  "6a74b1f477b4521425cc602c", "6a74b1f477b4521425cc602d", "6a74b1f477b4521425cc602e",
-  "6a74b1f477b4521425cc602f", "6a74b1f477b4521425cc6030", "6a74b1f477b4521425cc6031",
-  "6a74b1f477b4521425cc6032", "6a74b1f477b4521425cc6033", "6a74b1f477b4521425cc6034",
-  "6a74b1f477b4521425cc6035", "6a74b1f477b4521425cc6036", "6a74b1f477b4521425cc6037",
-  "6a74b1f477b4521425cc6038", "6a74b1f477b4521425cc6039", "6a74b1f477b4521425cc603a",
-  "6a74b1f477b4521425cc603b", "6a74b1f477b4521425cc603c", "6a74b1f477b4521425cc603d",
-  "6a74b1f477b4521425cc603e", "6a74b1f477b4521425cc603f", "6a74b1f477b4521425cc6040",
-  "6a74b1f477b4521425cc6041", "6a74b1f477b4521425cc6042", "6a74b1f477b4521425cc6043",
-  "6a74b1f477b4521425cc6044", "6a74b1f477b4521425cc6045", "6a74b1f477b4521425cc6046",
-  "6a74b1f477b4521425cc6047", "6a74b1f477b4521425cc6048", "6a74b1f477b4521425cc6049",
-  "6a74b1f477b4521425cc604a", "6a74b1f477b4521425cc604b", "6a74b826d3880b84f2050f0c"
+// Pasted directly from your source data — mapped to plain id strings below
+// rather than retyped, to avoid transcription errors across 51 ObjectIds.
+const USERS: { _id: string }[] = [
+  { "_id": "6a74b1f477b4521425cc601e" }, { "_id": "6a74b1f477b4521425cc601d" },
+  { "_id": "6a74b1f477b4521425cc6024" }, { "_id": "6a74b1f477b4521425cc6026" },
+  { "_id": "6a74b1f477b4521425cc6031" }, { "_id": "6a74b1f477b4521425cc603a" },
+  { "_id": "6a74b1f477b4521425cc6047" }, { "_id": "6a74b1f477b4521425cc6022" },
+  { "_id": "6a74b1f477b4521425cc601c" }, { "_id": "6a74b1f477b4521425cc604b" },
+  { "_id": "6a74b1f477b4521425cc6020" }, { "_id": "6a74b1f477b4521425cc6035" },
+  { "_id": "6a74b1f477b4521425cc604a" }, { "_id": "6a74b1f477b4521425cc6027" },
+  { "_id": "6a74b1f477b4521425cc6045" }, { "_id": "6a74b1f477b4521425cc6023" },
+  { "_id": "6a74b1f477b4521425cc6033" }, { "_id": "6a74b1f477b4521425cc603f" },
+  { "_id": "6a74b1f477b4521425cc6042" }, { "_id": "6a74b1f477b4521425cc6030" },
+  { "_id": "6a74b1f477b4521425cc6037" }, { "_id": "6a74b1f477b4521425cc6039" },
+  { "_id": "6a74b1f477b4521425cc603e" }, { "_id": "6a74b1f477b4521425cc6040" },
+  { "_id": "6a74b1f477b4521425cc6025" }, { "_id": "6a74b1f477b4521425cc602d" },
+  { "_id": "6a74b1f477b4521425cc602e" }, { "_id": "6a74b1f477b4521425cc6041" },
+  { "_id": "6a74b1f477b4521425cc6044" }, { "_id": "6a74b1f477b4521425cc6049" },
+  { "_id": "6a74b1f477b4521425cc601a" }, { "_id": "6a74b1f477b4521425cc602c" },
+  { "_id": "6a74b1f477b4521425cc602f" }, { "_id": "6a74b1f477b4521425cc603b" },
+  { "_id": "6a74b1f477b4521425cc6028" }, { "_id": "6a74b1f477b4521425cc602b" },
+  { "_id": "6a74b1f477b4521425cc6034" }, { "_id": "6a74b1f477b4521425cc6036" },
+  { "_id": "6a74b1f477b4521425cc601b" }, { "_id": "6a74b1f477b4521425cc603d" },
+  { "_id": "6a74b1f477b4521425cc6043" }, { "_id": "6a74b1f477b4521425cc6029" },
+  { "_id": "6a74b1f477b4521425cc602a" }, { "_id": "6a74b1f477b4521425cc6046" },
+  { "_id": "6a74b1f477b4521425cc601f" }, { "_id": "6a74b1f477b4521425cc6032" },
+  { "_id": "6a74b1f477b4521425cc603c" }, { "_id": "6a74b1f477b4521425cc6021" },
+  { "_id": "6a74b1f477b4521425cc6038" }, { "_id": "6a74b1f477b4521425cc6048" },
+  { "_id": "6a74b826d3880b84f2050f0c" },
 ];
 
-const recipeId = "6a74c44fb68d0aacbfe98109";
-
-const commentBodies = [
-  "Tried this recipe tonight and it turned out absolutely delicious! Will definitely make again.",
-  "Super easy to follow steps. Great for a quick weeknight dinner.",
-  "Added a bit extra garlic and red pepper flakes for heat. Perfection!",
-  "My whole family loved this, even the kids asked for seconds.",
-  "The flavor profile on this dish is spot on. Thanks for sharing!",
-  "Substituted olive oil for butter and it still came out amazing.",
-  "Crispy, flavorful, and incredibly easy to prepare.",
-  "Bookmarking this recipe right away. A new staple in our home!",
-  "Instructions were super clear. Took me less than 30 minutes total.",
-  "Great texture and aroma. Served it alongside a fresh green salad.",
-  "Turned out great! Next time I might reduce the salt slightly.",
-  "So refreshing to find a recipe that actually turns out like the photos.",
-  "Made this for a dinner party and everyone asked for the recipe!",
-  "Simple ingredients, massive flavor. 10/10!",
-  "Followed the recipe exactly as written and it turned out fantastic.",
-  "A perfect comfort meal. The seasoning blend is brilliant.",
-  "Quick, healthy, and satisfying. Perfect for meal prep!",
-  "Loved the texture! Will try swapping in fresh herbs next time.",
-  "Surpassed my expectations! Super rich and tasty.",
-  "Chef kiss! This was way easier than I thought it would be.",
-  "Great recipe! I cooked it a couple minutes longer for extra caramelization.",
-  "Really enjoyed this dish. Will be adding it to my regular rotation.",
-  "Tastes like restaurant quality! Surprised myself with how well it came out.",
-  "Pairs wonderfully with a cold glass of white wine.",
-  "So glad I found this. Super easy cleanup afterwards too!",
-  "An incredible balance of flavors. Smelled amazing while cooking.",
-  "Loved it! Doubled the batch so we could have leftovers tomorrow.",
-  "Simple, fast, and nutritious. What more could you ask for?",
-  "Wonderful combination of ingredients. Turned out so rich and savory.",
-  "Definite crowd-pleaser! Made it for game night and it was a hit.",
-  "Clear steps and excellent results. 5 stars from me!",
-  "Added some fresh parmesan on top at the end—highly recommend!",
-  "Light yet super satisfying. Will definitely be cooking this again.",
-  "The presentation on this dish looks impressive for how easy it is.",
-  "Came together effortlessly. Fantastic flavor balance!",
-  "My go-to comfort food recipe from now on.",
-  "Substituted a few veggies with what I had in the fridge, worked great!",
-  "Incredibly flavorful and moist. Cooked perfectly in time.",
-  "Hands down one of the best recipes I've tried on this platform.",
-  "Smells heavenly! My kitchen smells like a 5-star restaurant right now.",
-  "Easy prep, quick cleanup, and unbelievable flavor.",
-  "So happy with how this turned out on my first attempt!",
-  "Rich, savory, and perfectly balanced. Great job on this recipe!",
-  "Ideal recipe for busy weeknights when you want something fresh.",
-  "My partner loved it! Thanks for publishing this.",
-  "Crispy on the outside, perfectly cooked on the inside.",
-  "Will definitely be sharing this link with my friends!",
-  "A delightful dish. The sauce ties everything together brilliantly.",
-  "Super straightforward recipe with incredible results.",
-  "Loved every bite! Making this again this weekend.",
-  "Absolutely top tier recipe. Can't wait to explore more of your dishes!"
+// Varied bodies so 51 comments don't read as one bot repeating itself.
+const COMMENT_BODIES = [
+  "Made this last night, turned out great!",
+  "Tried it with a bit less salt and it was perfect for us.",
+  "This is now in my regular rotation, thanks for sharing.",
+  "Added extra garlic and it worked really well.",
+  "Simple and reliable, exactly what I was looking for.",
+  "Followed it exactly, no notes, will make again.",
+  "Swapped in what I had on hand and it still came out well.",
+  "Family loved this one, definitely making it again.",
+  "Good base recipe, easy to tweak to taste.",
+  "Solid recipe, saved it to my cookbook.",
 ];
 
+async function main() {
+  const uri = process.env.MONGO_URL;
+  if (!uri) throw new Error("MONGO_URL is not set");
 
-async function seedComments() {
-  try {
-    await mongoose.connect(MONGODB_URI);
-    console.log("Connected to MongoDB.");
-
-    const seedData = userIds.map((userId, index) => ({
-      recipe: new mongoose.Types.ObjectId(recipeId),
-      author: new mongoose.Types.ObjectId(userId),
-      body: commentBodies[index % commentBodies.length]
-    }));
-
-    const result = await Comment.insertMany(seedData);
-    console.log(`Successfully seeded ${result.length} comments!`);
-
-  } catch (error) {
-    console.error("Error seeding comments:", error);
-  } finally {
-    await mongoose.disconnect();
-    console.log("Disconnected from MongoDB.");
+  if (!isValidObjectId(RECIPE_ID)) {
+    throw new Error(`Invalid recipe id: ${RECIPE_ID}`);
   }
+  const recipeObjectId = new mongoose.Types.ObjectId(RECIPE_ID);
+
+  const validUserIds = USERS.map((u) => u._id).filter((id) => {
+    const valid = isValidObjectId(id);
+    if (!valid) console.warn(`Skipping invalid user id: ${id}`);
+    return valid;
+  });
+  if (validUserIds.length === 0) throw new Error("No valid user ids to seed");
+
+  await mongoose.connect(uri);
+
+  // bulkWrite + upsert on (recipe, author) is what makes reruns safe: an
+  // existing pair is matched and left untouched ($setOnInsert only fires
+  // on insert), so you never get 2x/3x comments from running this twice.
+  // ordered: false lets each op resolve independently instead of the whole
+  // batch aborting on the first failure.
+  const operations: AnyBulkWriteOperation<CommentDocument>[] = validUserIds.map(
+    (userId, i) => ({
+      updateOne: {
+        filter: {
+          recipe: recipeObjectId,
+          author: new mongoose.Types.ObjectId(userId),
+        },
+        update: {
+          $setOnInsert: {
+            recipe: recipeObjectId,
+            author: new mongoose.Types.ObjectId(userId),
+            body: COMMENT_BODIES[i % COMMENT_BODIES.length],
+          },
+        },
+        upsert: true,
+      },
+    })
+  );
+
+  const result = await Comment.bulkWrite(operations, { ordered: false });
+
+  console.log(
+    `Seed complete — inserted: ${result.upsertedCount}, already existed: ${
+      validUserIds.length - result.upsertedCount
+    }`
+  );
 }
 
-seedComments();
+main()
+  .catch((err) => {
+    console.error("Seed failed:", err);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await mongoose.disconnect();
+  });
