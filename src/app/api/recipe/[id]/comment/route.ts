@@ -6,7 +6,7 @@ import { authOptions } from "../../../auth/[...nextauth]/options";
 import { connectToDatabase } from "@/lib/dbConfig";
 import { isValidObjectId } from "mongoose";
 import ApiResponse from "@/types/ApiResponse";
-import {UserDocument} from "@/models/user.model";
+import { UserDocument } from "@/models/user.model";
 type RouteContext = {
     params: Promise<{ id: string }>;
 };
@@ -50,6 +50,7 @@ export async function POST(request: Request, { params }: RouteContext) {
         });
 
         const savedComment = await newComment.save();
+        await savedComment.populate("author");
 
         return NextResponse.json<ApiResponse>(
             { success: true, message: "Comment posted successfully", data: savedComment },
@@ -78,21 +79,21 @@ export async function GET(request: Request, { params }: RouteContext) {
         }
         await connectToDatabase();
         const { searchParams } = new URL(request.url);
-    const offset = Math.max(
-      0,
-      parseInt(searchParams.get("offset") ?? "0", 10) || 0
-    );
-    const limit = Math.min(
-      50,
-      parseInt(searchParams.get("limit") ?? "10", 10) || 10
-    );
+        const offset = Math.max(
+            0,
+            parseInt(searchParams.get("offset") ?? "0", 10) || 0
+        );
+        const limit = Math.min(
+            50,
+            parseInt(searchParams.get("limit") ?? "10", 10) || 10
+        );
 
 
-    const [Comments, total] = await Promise.all([
-      await  Comment.find({ recipe: recipeId }).skip(offset).limit(limit).sort({ createdAt: -1 }).populate("author").exec() as unknown as PopulatedCommentDocument[],
-      Comment.countDocuments({ recipe: recipeId }),
-    ]);
-        
+        const [Comments, total] = await Promise.all([
+            await Comment.find({ recipe: recipeId }).skip(offset).limit(limit).sort({ createdAt: -1 }).populate("author").exec() as unknown as PopulatedCommentDocument[],
+            Comment.countDocuments({ recipe: recipeId }),
+        ]);
+
         return NextResponse.json<ApiResponse>(
             { success: true, message: "Comments fetched successfully", data: { comments: Comments, total } },
             { status: 200 }

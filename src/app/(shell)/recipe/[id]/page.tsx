@@ -555,7 +555,7 @@ const page = () => {
                 </div>
 
                
-                <CommentSection recipeId={recipe?._id.toString() ?? ""} />
+                <CommentSection recipeId={recipe?._id.toString() ?? ""} authorId={author?._id.toString() ?? ""} />
             </section>
 
             {(session?.user?._id !== author?._id) && (

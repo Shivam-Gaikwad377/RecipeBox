@@ -9,7 +9,7 @@ const commentSchema = new Schema(
   { timestamps: true }
 );
 
-commentSchema.index({ recipe: 1, author: 1 }, { unique: true });
+commentSchema.index({ recipe: 1, author: 1 });
 
 export type CommentDocument = InferSchemaType<typeof commentSchema> & {
   _id: mongoose.Types.ObjectId;
