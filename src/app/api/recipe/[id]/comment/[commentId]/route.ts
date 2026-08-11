@@ -29,8 +29,8 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
             );
         }
 
-        const requestBody = await request.json();
-        const parsedData = commentSchema.safeParse({ ...requestBody, recipe: recipeId, author: userId });
+        const { body } = await request.json();
+        const parsedData = commentSchema.safeParse({ body, recipe: recipeId, author: userId });
 
         if (!parsedData.success) {
             const errorMessages = parsedData.error.issues.map(err => err.message).join(", ");

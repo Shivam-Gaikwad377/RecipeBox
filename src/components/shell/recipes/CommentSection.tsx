@@ -75,7 +75,7 @@ const CommentSection = ({ recipeId, authorId }: CommentSectionProps) => {
   };
 
   return (
-    <div className="bg-background text-on-background min-h-screen">
+    <div className="bg-background w-full text-on-background min-h-screen">
       <main className="w-full px-margin-mobile md:px-margin-desktop py-xl">
         <div className="flex items-center justify-between mb-lg border-b border-surface-variant pb-sm">
           <h2 className="font-headline-sm text-headline-sm text-on-background">
@@ -102,7 +102,7 @@ const CommentSection = ({ recipeId, authorId }: CommentSectionProps) => {
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               maxLength={MAX_COMMENT_LENGTH}
-              className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-sm font-body-md text-body-md text-on-background focus:ring-1 focus:ring-primary focus:border-primary resize-y min-h-[100px] transition-all"
+              className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-sm font-body-md text-body-md text-on-background focus:ring-1 focus:ring-primary focus:border-primary resize-y min-h-25 transition-all"
               placeholder="Share your thoughts or variations on this recipe..."
             />
             <div className="flex items-center justify-between">
@@ -140,6 +140,9 @@ const CommentSection = ({ recipeId, authorId }: CommentSectionProps) => {
               commentText={comment.body}
               timeAgo={new Date(comment.createdAt).toISOString()}
               isAuthor={authorId ? comment.author?._id.toString() === authorId : false}
+              recipe={recipeId}
+              commentID={comment._id.toString()}
+              commentAuthorId={comment.author?._id.toString()}
             />
           ))}
         </div>
