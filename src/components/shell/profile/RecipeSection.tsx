@@ -8,7 +8,7 @@ const RecipeSection = ({
     loading,
     isOwnProfile,
 }: {
-    recipes: RecipeDocument[] | null;
+    recipes: RecipeDocument[] | undefined;
     loading: boolean;
     isOwnProfile: boolean;
 }) => {
@@ -22,14 +22,14 @@ const RecipeSection = ({
                 description={
                     isOwnProfile ? "Recipes you publish will show up here." : undefined
                 }
-                actionHref={isOwnProfile ? "/recipes/new" : undefined}
+                actionHref={isOwnProfile ? "/recipe/new" : undefined}
                 actionLabel={isOwnProfile ? "Add recipe" : undefined}
             />
         );
     }
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 w-full lg:grid-cols-4 gap-gutter">
+        <div className="grid grid-cols-2 sm:grid-cols-3 w-full lg:grid-cols-4 gap-sm">
             {recipes?.map((recipe) => (
                 <RecipeCard key={recipe?._id.toString()} title={recipe?.title} imageUrl={recipe?.coverImage?.coverImageURL} rating={recipe?.ratingAverage} reviewCount={recipe?.ratingCount} cookTime={recipe?.cookTime} difficulty={recipe?.difficulty} />
             ))}

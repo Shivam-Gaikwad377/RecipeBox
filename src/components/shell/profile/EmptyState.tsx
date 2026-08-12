@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import React from 'react'
 
 
@@ -27,12 +28,12 @@ const EmptyState = ({
         </p>
       )}
       {actionHref && actionLabel && (
-        <a
+        <Link
           href={actionHref}
           className="mt-sm px-md py-sm rounded-full border-2 border-primary text-primary text-label-md hover-lift transition-colors"
         >
           {actionLabel}
-        </a>
+        </Link>
       )}
     </div>
   );

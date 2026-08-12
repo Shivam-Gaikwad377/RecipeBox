@@ -9,6 +9,7 @@ import { recipeSchema, type Recipe } from "@/schemas/recipe.schema"
 import axios from "axios"
 import { toast } from "sonner"
 import ApiResponse from "@/types/ApiResponse"
+import { useRouter } from "next/navigation"
 const TITLE_MAX_LENGTH = 150
 
 // ⚠️ placeholder shapes — align these to your actual Ingredient/Instruction
@@ -57,7 +58,7 @@ const AddRecipe = () => {
     const servings = watch("servings") ?? 1
     const tags = watch("tags") ?? []
     const coverImageFiles = watch("coverImage") ?? null
-
+    const router = useRouter();
     const [tagDraft, setTagDraft] = useState("")
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
@@ -111,6 +112,7 @@ const AddRecipe = () => {
             const response = await axios.post("/api/recipe", data)
             if (response.status === 200) {
                 toast.success("Recipe added successfully!")
+                router.push(`/recipe/${response.data.recipeId}`)
             }
 
         } catch (error: any) {

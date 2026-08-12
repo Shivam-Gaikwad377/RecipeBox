@@ -73,47 +73,47 @@ const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
 //     );
 //   }
 
-  // return (
-  //   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-gutter">
-  //     {cookbooks.map((cookbook) => (
-  //       <a
-  //         key={cookbook._id}
-  //         href={`/cookbooks/${cookbook._id}`}
-  //         className="rounded-xl overflow-hidden bg-surface-container-lowest paper-shadow hover-lift transition-transform"
-  //       >
-  //         <div className="aspect-square grid grid-cols-2 grid-rows-2 gap-px bg-surface-dim">
-  //           {Array.from({ length: 4 }).map((_, i) => (
-  //             <div
-  //               key={i}
-  //               className="bg-surface-container flex items-center justify-center overflow-hidden"
-  //             >
-  //               {cookbook.coverImages?.[i] ? (
-  //                 // eslint-disable-next-line @next/next/no-img-element
-  //                 <img
-  //                   src={cookbook.coverImages[i]}
-  //                   alt=""
-  //                   className="w-full h-full object-cover"
-  //                 />
-  //               ) : (
-  //                 <span className="material-symbols-outlined text-[18px] text-outline">
-  //                   menu_book
-  //                 </span>
-  //               )}
-  //             </div>
-  //           ))}
-  //         </div>
-  //         <div className="p-sm">
-  //           <p className="text-label-md text-on-surface truncate">
-  //             {cookbook.name}
-  //           </p>
-  //           <p className="text-label-sm text-on-surface-variant mt-xs">
-  //             {cookbook.recipeCount} {cookbook.recipeCount === 1 ? "recipe" : "recipes"}
-  //           </p>
-  //         </div>
-  //       </a>
-  //     ))}
-  //   </div>
-  // );
+// return (
+//   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-gutter">
+//     {cookbooks.map((cookbook) => (
+//       <a
+//         key={cookbook._id}
+//         href={`/cookbooks/${cookbook._id}`}
+//         className="rounded-xl overflow-hidden bg-surface-container-lowest paper-shadow hover-lift transition-transform"
+//       >
+//         <div className="aspect-square grid grid-cols-2 grid-rows-2 gap-px bg-surface-dim">
+//           {Array.from({ length: 4 }).map((_, i) => (
+//             <div
+//               key={i}
+//               className="bg-surface-container flex items-center justify-center overflow-hidden"
+//             >
+//               {cookbook.coverImages?.[i] ? (
+//                 // eslint-disable-next-line @next/next/no-img-element
+//                 <img
+//                   src={cookbook.coverImages[i]}
+//                   alt=""
+//                   className="w-full h-full object-cover"
+//                 />
+//               ) : (
+//                 <span className="material-symbols-outlined text-[18px] text-outline">
+//                   menu_book
+//                 </span>
+//               )}
+//             </div>
+//           ))}
+//         </div>
+//         <div className="p-sm">
+//           <p className="text-label-md text-on-surface truncate">
+//             {cookbook.name}
+//           </p>
+//           <p className="text-label-sm text-on-surface-variant mt-xs">
+//             {cookbook.recipeCount} {cookbook.recipeCount === 1 ? "recipe" : "recipes"}
+//           </p>
+//         </div>
+//       </a>
+//     ))}
+//   </div>
+// );
 
 
 const ProfilePage = () => {
@@ -128,7 +128,7 @@ const ProfilePage = () => {
   const [userData, setUserData] = useState<UserDocument | null>(null);
   const [followerCount, setFollowerCount] = useState<{ count: number } | null>({ count: 0 });
   const [followingCount, setFollowingCount] = useState<{ count: number } | null>({ count: 0 });
-  const [recipes, setRecipes] = useState<RecipeDocument[] | null>([]);
+  const [recipes, setRecipes] = useState<{total: number, recipes: RecipeDocument[]} | null>(null);
   // const [cookbooks, setCookbooks] = useState<CookbookSummary[] | null>([]);
 
   const { loading: userDataLoading, error: userDataError } = useFetch<UserDocument>(
@@ -162,11 +162,11 @@ const ProfilePage = () => {
   // followers/following above. Adjust if your real routes differ. Counts
   // below are derived from list length — swap for a dedicated count field
   // if either endpoint paginates instead of returning the full list.
-  const { loading: recipesLoading } = useFetch<RecipeDocument[]>(
+  const { loading: recipesLoading } = useFetch<{ total: number; recipes: RecipeDocument[] }>(
     userId ? `/api/users/${userId}/recipes` : "",
     {},
     setRecipes
-    
+
   );
   // const { loading: cookbooksLoading } = useFetch<CookbookSummary[]>(
   //   userId ? `/api/users/${userId}/cookbooks` : "",
@@ -300,7 +300,7 @@ const ProfilePage = () => {
 
   const isSaveDisabled =
     isSubmitting || usernameStatus === "checking" || usernameStatus === "taken";
-
+  
   return (
     <>
       <section className="col-span-4 md:col-span-12 flex flex-col md:flex-row items-center md:items-start gap-lg mb-xl mt-lg">
@@ -416,8 +416,8 @@ const ProfilePage = () => {
               type="button"
               aria-selected={activeTab === tab.id}
               className={`pb-sm px-xs text-label-md transition-colors border-b-2 -mb-px ${activeTab === tab.id
-                  ? "text-primary border-primary font-semibold"
-                  : "text-on-surface-variant border-transparent hover:text-on-surface"
+                ? "text-primary border-primary font-semibold"
+                : "text-on-surface-variant border-transparent hover:text-on-surface"
                 }`}
               onClick={() => setActiveTab(tab.id)}
             >
@@ -427,7 +427,7 @@ const ProfilePage = () => {
         </div>
 
         {activeTab === "recipes" && (
-          <RecipeSection recipes={recipes} loading={recipesLoading} isOwnProfile={isOwnProfile} />
+          <RecipeSection recipes={recipes?.recipes} loading={recipesLoading} isOwnProfile={isOwnProfile} />
         )}
 
         {/* {activeTab === "cookbooks" && (
