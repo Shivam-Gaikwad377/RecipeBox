@@ -72,3 +72,37 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
 }
+
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+    const userId = (await params).id;
+    if(!isValidObjectId(userId)){
+        return NextResponse.json<ApiResponse>(
+            { success: false, message: "Invalid user ID" },
+            { status: 400 }
+        );
+    }
+
+    try {
+        await connectToDatabase();
+        const user = await User.findById(params.id);
+        if (!user) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "User not found" },
+                { status: 404 }
+            );
+        }
+
+        const cookbooks = await Cookbook.find({ author: params.id }).populate("recipes");
+        return NextResponse.json<ApiResponse>(
+            { success: true, message: "Cookbooks fetched successfully", data: cookbooks },
+            { status: 200 }
+        );
+    }
+    catch (error) {
+        console.error("Error fetching cookbooks:", error);
+        return NextResponse.json<ApiResponse>(
+            { success: false, message: "Internal Server Error" },
+            { status: 500 }
+        );
+    }
+}
