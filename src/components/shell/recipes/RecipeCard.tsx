@@ -5,7 +5,7 @@ type RecipeCardProps1 = {
     imageUrl: string | undefined;
     rating: number;
     reviewCount: number;
-    cookTime: string;
+    cookTime: number;
     difficulty: "Easy" | "Medium" | "Hard";
 };
 const RecipeCard = ({ title, imageUrl, rating, reviewCount, cookTime, difficulty }: RecipeCardProps1) => {

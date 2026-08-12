@@ -1,5 +1,5 @@
 import React from 'react'
-type RecipeCardProps = {
+export type RecipeCardProps = {
   title: string;
   category: string;
   rating: number;
