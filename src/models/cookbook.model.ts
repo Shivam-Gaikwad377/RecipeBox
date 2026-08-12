@@ -2,7 +2,7 @@ import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 
 const cookbookSchema = new Schema(
   {
-    owner: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    author: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, default: "" },
     recipes: [{ type: Schema.Types.ObjectId, ref: "Recipe" }],
