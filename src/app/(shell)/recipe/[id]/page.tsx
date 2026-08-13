@@ -1,9 +1,9 @@
 "use client"
-import React from 'react'
+import React, { useCallback } from 'react'
 import PrimaryButton from '@/components/PrimaryButton'
 import SecondaryButton from '@/components/SecondaryButton'
 import { RecipeDocument } from "@/models/recipe.model";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { updateRecipeSchema, UpdateRecipeInput, UpdateRecipeOutput } from "@/schemas/updateRecipe.schema";
 import { usePathname } from "next/navigation";
 import ApiResponse from "@/types/ApiResponse";
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import CommentSection from '@/components/shell/recipes/CommentSection';
 import useFetch from '@/hooks/useFetch';
 import { RatingInput } from '@/components/shell/recipes/Rating';
+import { getErrorMessage } from "@/helpers/getErrorMessage";
 const page = () => {
     const [recipe, setRecipe] = useState<RecipeDocument | null>(null);
     const { data: session } = useSession();
@@ -31,6 +32,10 @@ const page = () => {
     const [showRating, setShowRating] = useState(false);
     const [userRating, setUserRating] = useState<{ hasRated: boolean; ratingValue?: number } | null>(null);
     const [distributedRating, setDistributedRating] = useState<{ [key: number]: number } | null>({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [isUploadingCover, setIsUploadingCover] = useState(false);
+    const MAX_COVER_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+    const ACCEPTED_COVER_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
     const form = useForm<UpdateRecipeInput, unknown, UpdateRecipeOutput>({
         resolver: zodResolver(updateRecipeSchema),
         defaultValues: {
@@ -123,9 +128,45 @@ const page = () => {
             toast.error("Failed to update recipe. Please try again.");
         }
     };
+
+    const handleImageChange = useCallback(
+        async (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            if (!ACCEPTED_COVER_IMAGE_TYPES.includes(file.type)) {
+                toast.error("Please upload a JPEG, PNG, or WebP image.");
+                e.target.value = "";
+                return;
+            }
+            if (file.size > MAX_COVER_IMAGE_BYTES) {
+                toast.error("Image must be smaller than 5MB.");
+                e.target.value = "";
+                return;
+            }
+
+            setIsUploadingCover(true);
+            try {
+                const formData = new FormData();
+                formData.append("coverImage", file);
+
+                const response = await axios.patch<ApiResponse>(`/api/recipe/upload-cover/${id}`, formData);
+                setRecipe(response.data.data);
+
+                toast.success("Cover image updated successfully!");
+            } catch (error) {
+                toast.error(getErrorMessage(error, "Error updating cover image."));
+            } finally {
+                setIsUploadingCover(false);
+                e.target.value = "";
+            }
+        },
+        []
+    );
     const onInvalid = (errors: FieldErrors<UpdateRecipeInput>) => {
         console.error("Validation failed:", errors)
     }
+
 
     return (
         <main
@@ -134,11 +175,33 @@ const page = () => {
                 <article
                     className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden mb-12" >
                     <div className="w-full h-64 md:h-120 bg-surface-variant relative">
+
                         <img
                             className="w-full h-full object-cover"
                             data-alt="A high-fidelity, professional food photography shot of a whole charred lemon and herb roast chicken on a rustic wooden board, garnished with fresh rosemary and roasted lemon halves, soft natural lighting, gourmet kitchen setting, 8k resolution, appetizing and premium."
                             src={recipe?.coverImage?.coverImageURL}
                         />
+                        {isEditing && (<><button
+                            type="button"
+                            aria-label="Change cover image"
+                            disabled={isUploadingCover}
+                            className="absolute top-0 left-0 bg-surface-container-lowest m-2 border border-outline-variant rounded-full p-2 shadow-sm text-primary hover:bg-surface-container hover-lift flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <span
+                                className="material-symbols-outlined text-[20px]"
+                                
+                            >
+                                {isUploadingCover ? "hourglass_top" : "edit"}
+                            </span>
+                        </button>
+                            <input
+                                className="hidden"
+                                type="file"
+                                accept={ACCEPTED_COVER_IMAGE_TYPES.join(",")}
+                                onChange={handleImageChange}
+                                ref={fileInputRef}
+                            /></>)}
                     </div>
                     <div className="p-6 md:p-8">
                         <h1
@@ -222,16 +285,16 @@ const page = () => {
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
-                               
-                                    <span
-                                        onClick={() => setShowRating(true)}
-                                        className="material-symbols-outlined cursor-pointer text-primary-container"
-                                        data-icon="star"
-                                        data-weight={userRating?.hasRated ? "filled" : "regular"}
-                                        style={{ fontVariationSettings: `"FILL" ${userRating?.hasRated ? "1" : "0"}` }}>
-                                      star
-                                    </span>
-                               
+
+                                <span
+                                    onClick={() => setShowRating(true)}
+                                    className="material-symbols-outlined cursor-pointer text-primary-container"
+                                    data-icon="star"
+                                    data-weight={userRating?.hasRated ? "filled" : "regular"}
+                                    style={{ fontVariationSettings: `"FILL" ${userRating?.hasRated ? "1" : "0"}` }}>
+                                    star
+                                </span>
+
                                 <span className="font-semibold text-body-md">{recipe?.ratingAverage?.toFixed(1) ?? '0.0'}</span>
                                 <span className="text-on-surface-variant text-label-sm">({recipe?.ratingCount ?? 0} {recipe?.ratingCount === 1 ? 'rating' : 'ratings'})</span>
                                 {showRating && (
@@ -554,8 +617,8 @@ const page = () => {
                     </div>
                 </div>
 
-               
-                <CommentSection recipeId={recipe?._id.toString() ?? ""} authorId={author?._id.toString() ?? ""} />
+
+                <CommentSection recipeId={recipe?._id?.toString() ?? ""} authorId={author?._id.toString() ?? ""} />
             </section>
 
             {(session?.user?._id !== author?._id) && (
@@ -565,16 +628,16 @@ const page = () => {
                     </h2>
                     <div
                         className="flex overflow-x-auto overflow-auto h-auto gap-6 pb-4 scrollbar-hide w-auto -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0"
-                >
+                    >
 
-                    {
-                        moreRecipes?.recipes?.map((recipe) => (
-                            <RecipeCard key={recipe?._id.toString()} title={recipe.title} rating={4.5} imageUrl={recipe?.coverImage?.coverImageURL} reviewCount={120} cookTime={`${recipe?.cookTime} min`} difficulty={recipe?.difficulty} />
-                        ))
-                    }
-                </div>
-                
-            </section>)}
+                        {
+                            moreRecipes?.recipes?.map((recipe) => (
+                                <RecipeCard key={recipe?._id.toString()} id={recipe?._id.toString()} title={recipe.title} rating={4.5} imageUrl={recipe?.coverImage?.coverImageURL} reviewCount={120} cookTimeMinutes={recipe?.cookTime} difficulty={recipe?.difficulty} />
+                            ))
+                        }
+                    </div>
+
+                </section>)}
         </main >
     )
 }

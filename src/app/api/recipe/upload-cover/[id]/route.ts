@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
         await connectToDatabase();
 
-        const recipeId = (await params.id);
+        const recipeId = (await params).id;
 
         const recipe = await Recipe.findOne({ _id: recipeId, author: userId });
         if (!recipe) {
