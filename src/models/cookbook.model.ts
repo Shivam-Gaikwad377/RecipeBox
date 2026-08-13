@@ -8,7 +8,7 @@ const cookbookSchema = new Schema(
     recipes: [{ type: Schema.Types.ObjectId, ref: "Recipe" }],
     coverImage: {
         coverImageURL: { type: String, required: true },
-        coverImagePublicId: { type: String, required: true },
+        coverImageFileId: { type: String, required: true },
     },
   },
   { timestamps: true }
