@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
             { status: 401 }
         );
     }
-    if(session.user._id !== params.id){
+    if(session.user._id !== userId){
         return NextResponse.json<ApiResponse>(
             { success: false, message: "Forbidden" },
             { status: 403 }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     try {
         await connectToDatabase();
-        const user = await User.findById(params.id);
+        const user = await User.findById(userId);
         if (!user) {
             return NextResponse.json<ApiResponse>(
                 { success: false, message: "User not found" },
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
 
         const requestBody = await request.json();
-        const parsedData = cookbookSchema.safeParse(requestBody);
+        const parsedData = cookbookSchema.safeParse({...requestBody, author: userId});
         if (!parsedData.success) {
             return NextResponse.json<ApiResponse>(
                 { success: false, message: "Invalid request data", data: parsedData.error.format() },
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
         const newCookbook = new Cookbook({
             ...parsedData.data,
-            author: params.id
+            author: userId
         });
 
         const savedCookbook = await newCookbook.save();

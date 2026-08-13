@@ -6,7 +6,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { getImageKitClient } from "@/lib/imagekit";
 import ApiResponse from "@/types/ApiResponse";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: { cookBookId: string } }) {
     try {
         // Instantiate ImageKit inside the handler (prevents build-time missing key error)
         const imagekitClient = getImageKitClient();
@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
         await connectToDatabase();
 
-        const cookBookId = (await params).id;
+        const cookBookId = (await params).cookBookId;
 
         const cookBook = await Cookbook.findOne({ _id: cookBookId, author: userId });
         if (!cookBook) {
