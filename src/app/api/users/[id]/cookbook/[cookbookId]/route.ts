@@ -58,14 +58,14 @@ export async function PATCH(
     { params }: { params: { id: string; cookbookId: string } }
 ) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?._id) {
         return NextResponse.json<ApiResponse>(
             { success: false, message: "Unauthorized" },
 
             { status: 401 }
         );
     }
-    if (session.user.id !== params.id) {
+    if (session.user._id !== params.id) {
         return NextResponse.json<ApiResponse>(
             { success: false, message: "Forbidden" },
             { status: 403 }
@@ -90,7 +90,7 @@ export async function PATCH(
     await connectToDatabase();
 
     const cookbook = await Cookbook.findOneAndUpdate(
-        { _id: params.cookbookId, user: session.user.id },
+        { _id: params.cookbookId, user: session.user._id },
         { $addToSet: { recipes: recipeId } },
         { new: true }
     ).lean();

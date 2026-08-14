@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
-
+import axios from "axios";
 type Cookbook = {
   _id: string;
   name: string;
@@ -48,11 +48,10 @@ const SaveToCookbookModal = ({ recipeId, onClose }: SaveToCookbookModalProps) =>
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/users/${session!.user.id}/cookbook`, {
+        const res = await axios.get<Cookbook[]>(`/api/users/${session.user._id}/cookbook`, {
           signal: controller.signal,
         });
-        if (!res.ok) throw new Error("Failed to load cookbooks");
-        setCookbooks(await res.json());
+        setCookbooks(res.data);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           setError("Couldn't load your cookbooks. Try again.");
@@ -63,20 +62,19 @@ const SaveToCookbookModal = ({ recipeId, onClose }: SaveToCookbookModalProps) =>
     })();
 
     return () => controller.abort();
-  }, [status, session?.user.id]);
+  }, [status, session?.user._id]);
 
   const handleSave = async (cookbookId: string) => {
-    if (!session?.user.id || savingId) return;
+    if (!session?.user._id || savingId) return;
     setSavingId(cookbookId);
 
     try {
-      const res = await fetch(`/api/users/${session.user.id}/cookbook/${cookbookId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipeId }),
-      });
-      if (!res.ok) throw new Error("Failed to save");
-
+        const res = await axios.patch(`/api/users/${session.user._id}/cookbook/${cookbookId}`, {
+            recipeId,
+        });
+        if (res.status !== 200) {
+            throw new Error("Failed to save recipe to cookbook");
+        }
       setCookbooks((prev) =>
         prev.map((cb) =>
           cb._id === cookbookId ? { ...cb, recipes: [...cb.recipes, recipeId] } : cb
@@ -112,7 +110,7 @@ const SaveToCookbookModal = ({ recipeId, onClose }: SaveToCookbookModalProps) =>
           <p className="text-sm text-on-surface-variant py-md text-center">Sign in to save recipes.</p>
         )}
         {loading && <p className="text-sm text-on-surface-variant py-md text-center">Loading…</p>}
-        {error && <p className="text-sm text-red-500 py-sm">{error}</p>}
+        
         {!loading && !error && status === "authenticated" && cookbooks.length === 0 && (
           <p className="text-sm text-on-surface-variant py-md text-center">
             You don&apos;t have any cookbooks yet.

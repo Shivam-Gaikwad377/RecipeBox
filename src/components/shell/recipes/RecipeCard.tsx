@@ -31,22 +31,22 @@ const RecipeCard = ({
 
   return (
     <div className="group relative w-60">
-      <button
-        type="button"
-        onClick={() => setIsSaveModalOpen(true)}
-        aria-label="Save recipe to cookbook"
-        className="absolute top-sm left-sm z-10 bg-black/60 backdrop-blur-sm text-white p-1.5 rounded-lg hover:bg-black/80 transition-colors"
-      >
-        <span className="material-symbols-outlined text-lg leading-none" aria-hidden="true">
-          bookmark_add
-        </span>
-      </button>
 
       <Link
-        href={`/recipes/${id}`}
+        href={`/recipe/${id}`}
         className="w-full bg-surface-container-lowest rounded-xl recipe-card-shadow flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
       >
         <article className="flex flex-col grow">
+          <button
+            type="button"
+            onClick={() => setIsSaveModalOpen(true)}
+            aria-label="Save recipe to cookbook"
+            className="absolute top-sm left-sm z-10 bg-black/60 flex items-center justify-center backdrop-blur-sm text-white p-1.5 rounded-lg hover:bg-black/80 transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg leading-none" aria-hidden="true">
+              bookmark_add
+            </span>
+          </button>
           <div className="relative aspect-4/3 overflow-hidden rounded-t-xl">
             <Image
               className="object-cover transition-transform duration-500 "

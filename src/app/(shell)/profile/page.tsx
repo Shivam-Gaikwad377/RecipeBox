@@ -300,7 +300,7 @@ const ProfilePage = () => {
 
   const isSaveDisabled =
     isSubmitting || usernameStatus === "checking" || usernameStatus === "taken";
-  
+    
   return (
     <>
       <section className="col-span-4 md:col-span-12 flex flex-col md:flex-row items-center md:items-start gap-lg mb-xl mt-lg">
