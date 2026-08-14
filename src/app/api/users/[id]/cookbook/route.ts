@@ -93,9 +93,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             );
         }
 
-        const cookbooks = await Cookbook.find({ author: userId }).populate("recipes");
+        const [total, cookbooks] = await Promise.all([
+            Cookbook.countDocuments({ author: userId }),
+            Cookbook.find({ author: userId }).lean()
+        ]);
         return NextResponse.json<ApiResponse>(
-            { success: true, message: "Cookbooks fetched successfully", data: cookbooks },
+            { success: true, message: "Cookbooks fetched successfully", data: { total, cookbooks } },
             { status: 200 }
         );
     }

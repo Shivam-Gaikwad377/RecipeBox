@@ -22,6 +22,8 @@ import PrimaryButton from "@/components/PrimaryButton";
 import SecondaryButton from "@/components/SecondaryButton";
 import useFetch from "@/hooks/useFetch";
 import RecipeSection from "@/components/shell/profile/RecipeSection";
+import { CookbookDocument } from "@/models/cookbook.model";
+import CookbookSection from "@/components/shell/cookbook/CookbookSection";
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const DEFAULT_AVATAR = "/default-avatar.png";
@@ -46,74 +48,7 @@ const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
 
 
 
-// function CookbooksGrid({
-//   cookbooks,
-//   loading,
-//   isOwnProfile,
-// }: {
-//   cookbooks: CookbookSummary[];
-//   loading: boolean;
-//   isOwnProfile: boolean;
-// }) {
-//   if (loading) return <GridSkeleton />;
 
-//   if (cookbooks.length === 0) {
-//     return (
-//       <EmptyState
-//         icon="menu_book"
-//         title={isOwnProfile ? "No cookbooks yet" : "No cookbooks to show"}
-//         description={
-//           isOwnProfile
-//             ? "Group your saved recipes into cookbooks."
-//             : undefined
-//         }
-//         actionHref={isOwnProfile ? "/cookbooks/new" : undefined}
-//         actionLabel={isOwnProfile ? "New cookbook" : undefined}
-//       />
-//     );
-//   }
-
-// return (
-//   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-gutter">
-//     {cookbooks.map((cookbook) => (
-//       <a
-//         key={cookbook._id}
-//         href={`/cookbooks/${cookbook._id}`}
-//         className="rounded-xl overflow-hidden bg-surface-container-lowest paper-shadow hover-lift transition-transform"
-//       >
-//         <div className="aspect-square grid grid-cols-2 grid-rows-2 gap-px bg-surface-dim">
-//           {Array.from({ length: 4 }).map((_, i) => (
-//             <div
-//               key={i}
-//               className="bg-surface-container flex items-center justify-center overflow-hidden"
-//             >
-//               {cookbook.coverImages?.[i] ? (
-//                 // eslint-disable-next-line @next/next/no-img-element
-//                 <img
-//                   src={cookbook.coverImages[i]}
-//                   alt=""
-//                   className="w-full h-full object-cover"
-//                 />
-//               ) : (
-//                 <span className="material-symbols-outlined text-[18px] text-outline">
-//                   menu_book
-//                 </span>
-//               )}
-//             </div>
-//           ))}
-//         </div>
-//         <div className="p-sm">
-//           <p className="text-label-md text-on-surface truncate">
-//             {cookbook.name}
-//           </p>
-//           <p className="text-label-sm text-on-surface-variant mt-xs">
-//             {cookbook.recipeCount} {cookbook.recipeCount === 1 ? "recipe" : "recipes"}
-//           </p>
-//         </div>
-//       </a>
-//     ))}
-//   </div>
-// );
 
 
 const ProfilePage = () => {
@@ -129,7 +64,7 @@ const ProfilePage = () => {
   const [followerCount, setFollowerCount] = useState<{ count: number } | null>({ count: 0 });
   const [followingCount, setFollowingCount] = useState<{ count: number } | null>({ count: 0 });
   const [recipes, setRecipes] = useState<{total: number, recipes: RecipeDocument[]} | null>(null);
-  // const [cookbooks, setCookbooks] = useState<CookbookSummary[] | null>([]);
+  const [cookbooks, setCookbooks] = useState<{ total: number; cookbooks: CookbookDocument[] } | null>(null);
 
   const { loading: userDataLoading, error: userDataError } = useFetch<UserDocument>(
     `/api/profile/${session?.data?.user?.username}`,
@@ -168,11 +103,11 @@ const ProfilePage = () => {
     setRecipes
 
   );
-  // const { loading: cookbooksLoading } = useFetch<CookbookSummary[]>(
-  //   userId ? `/api/users/${userId}/cookbooks` : "",
-  //   {},
-  //   
-  // );
+  const { loading: cookbooksLoading } = useFetch<{ total: number; cookbooks: CookbookDocument[] }>(
+    userId ? `/api/users/${userId}/cookbook` : "",
+    {},
+    setCookbooks
+  );
 
   const form = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
@@ -430,13 +365,13 @@ const ProfilePage = () => {
           <RecipeSection recipes={recipes?.recipes} loading={recipesLoading} isOwnProfile={isOwnProfile} />
         )}
 
-        {/* {activeTab === "cookbooks" && (
-          <CookbooksGrid
-            cookbooks={cookbooks}
+        {activeTab === "cookbooks" && (
+          <CookbookSection
+            cookbooks={cookbooks?.cookbooks}
             loading={cookbooksLoading}
             isOwnProfile={isOwnProfile}
           />
-        )} */}
+        )}
 
         {activeTab === "about" && (
           <div className="">
