@@ -1,3 +1,4 @@
+"use client"
 import React from 'react'
 import AddCookbook from '@/components/shell/cookbook/AddCookbook'
 import { usePathname } from 'next/navigation';
@@ -6,15 +7,16 @@ import { useState } from 'react'
 import { CookbookDocument } from '@/models/cookbook.model';
 import { RecipeDocument } from '@/models/recipe.model';
 import RecipeSection from '@/components/shell/profile/RecipeSection';
-
+import {useSession} from "next-auth/react";
 const page = () => {
   const pathname = usePathname();
   const id = pathname.split("/").pop();
+  const {data: session} = useSession();
   const [cookbook, setCookbooks] = useState<CookbookDocument | null>(null);
-  const {loading, error} = useFetch<CookbookDocument | null>(`/api/users/${id}/cookbook`, {}, setCookbooks);
+  const {loading, error} = useFetch<CookbookDocument | null>(`/api/users/${session?.user?._id}/cookbook/${id}`, {}, setCookbooks);
   return (
 
-    <body
+    <div
       className="bg-surface text-on-surface font-body-md antialiased min-h-screen pb-xl"
     >
 
@@ -44,7 +46,7 @@ const page = () => {
             <img
               alt="Fresh ingredients on a wooden kitchen counter"
               className="w-full h-full object-cover"
-              src="https://lh3.googleusercontent.com/aida/AP1WRLsf4qXgho8SznHXmkLRb7hTKUJ1pKReGWH_fmLn2J7pEF9OC8sv9F-gOIo6nDTjk3TAP0yCKkZBXQj8-ILp_4jdb0Facq7VoWCwumTO3hZeyIHJIKImzzfF7yZEXjp2QUcbfWsR1ACH384k0jVGFUd8RIySTGSGn8ikp__c3-2VAv3e91RpxnCfNBrTv4qv8y9vq4pngQQueO2T4I2tgOPcnLrDvuAICg9HL03TCoIwdLpMst7QVGNaEUM"
+              src={cookbook?.coverImage?.coverImageURL || "/images/cookbook-cover-placeholder.jpg"}
             />
           </div>
 
@@ -87,7 +89,7 @@ const page = () => {
           <RecipeSection recipes={cookbook?.recipes || [] as RecipeDocument[] } isOwnProfile={true} loading={loading} />
         </section>
       </main>
-    </body>
+    </div>
   )
 }
 

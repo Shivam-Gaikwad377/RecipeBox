@@ -1,124 +1,161 @@
 /**
- * Seeds one Comment per user onto a single recipe.
+ * scripts/seed-cookbooks.ts
  *
- * Idempotent by design: uses bulkWrite + upsert on (recipe, author), so
- * re-running this script skips users who already commented instead of
- * creating duplicates. Note: your Comment schema's {recipe, author} index
- * is NOT unique at the DB level — this script's idempotency comes from the
- * upsert filter, not a schema constraint. If you need that guarantee
- * enforced outside this script too, add `commentSchema.index({ recipe: 1,
- * author: 1 }, { unique: true })` to comment.model.ts.
+ * Seeds 3 Cookbooks for a single user from a fixed set of Recipe ids.
+ * Idempotent: deletes any cookbooks previously seeded for this user
+ * (matched by author + title) before inserting, so re-running it
+ * won't pile up duplicates.
  *
- * Run: MONGO_URL="<your-uri>" npx tsx scripts/seed-recipe-comments.ts
+ * Run with: npx tsx scripts/seed-cookbooks.ts
  */
 
-import mongoose, { isValidObjectId, type AnyBulkWriteOperation } from "mongoose";
-import { Comment, type CommentDocument } from "@/models/comment.model"; // adjust path to your project
 import dotenv from "dotenv";
-dotenv.config(); // Load environment variables from .env.local
-const RECIPE_ID = "6a74c44fb68d0aacbfe98117";
+dotenv.config();
+import mongoose from "mongoose";
+import { Cookbook } from "@/models/cookbook.model"; // TODO: adjust to your actual model path
 
-// Pasted directly from your source data — mapped to plain id strings below
-// rather than retyped, to avoid transcription errors across 51 ObjectIds.
-const USERS: { _id: string }[] = [
-  { "_id": "6a74b1f477b4521425cc601e" }, { "_id": "6a74b1f477b4521425cc601d" },
-  { "_id": "6a74b1f477b4521425cc6024" }, { "_id": "6a74b1f477b4521425cc6026" },
-  { "_id": "6a74b1f477b4521425cc6031" }, { "_id": "6a74b1f477b4521425cc603a" },
-  { "_id": "6a74b1f477b4521425cc6047" }, { "_id": "6a74b1f477b4521425cc6022" },
-  { "_id": "6a74b1f477b4521425cc601c" }, { "_id": "6a74b1f477b4521425cc604b" },
-  { "_id": "6a74b1f477b4521425cc6020" }, { "_id": "6a74b1f477b4521425cc6035" },
-  { "_id": "6a74b1f477b4521425cc604a" }, { "_id": "6a74b1f477b4521425cc6027" },
-  { "_id": "6a74b1f477b4521425cc6045" }, { "_id": "6a74b1f477b4521425cc6023" },
-  { "_id": "6a74b1f477b4521425cc6033" }, { "_id": "6a74b1f477b4521425cc603f" },
-  { "_id": "6a74b1f477b4521425cc6042" }, { "_id": "6a74b1f477b4521425cc6030" },
-  { "_id": "6a74b1f477b4521425cc6037" }, { "_id": "6a74b1f477b4521425cc6039" },
-  { "_id": "6a74b1f477b4521425cc603e" }, { "_id": "6a74b1f477b4521425cc6040" },
-  { "_id": "6a74b1f477b4521425cc6025" }, { "_id": "6a74b1f477b4521425cc602d" },
-  { "_id": "6a74b1f477b4521425cc602e" }, { "_id": "6a74b1f477b4521425cc6041" },
-  { "_id": "6a74b1f477b4521425cc6044" }, { "_id": "6a74b1f477b4521425cc6049" },
-  { "_id": "6a74b1f477b4521425cc601a" }, { "_id": "6a74b1f477b4521425cc602c" },
-  { "_id": "6a74b1f477b4521425cc602f" }, { "_id": "6a74b1f477b4521425cc603b" },
-  { "_id": "6a74b1f477b4521425cc6028" }, { "_id": "6a74b1f477b4521425cc602b" },
-  { "_id": "6a74b1f477b4521425cc6034" }, { "_id": "6a74b1f477b4521425cc6036" },
-  { "_id": "6a74b1f477b4521425cc601b" }, { "_id": "6a74b1f477b4521425cc603d" },
-  { "_id": "6a74b1f477b4521425cc6043" }, { "_id": "6a74b1f477b4521425cc6029" },
-  { "_id": "6a74b1f477b4521425cc602a" }, { "_id": "6a74b1f477b4521425cc6046" },
-  { "_id": "6a74b1f477b4521425cc601f" }, { "_id": "6a74b1f477b4521425cc6032" },
-  { "_id": "6a74b1f477b4521425cc603c" }, { "_id": "6a74b1f477b4521425cc6021" },
-  { "_id": "6a74b1f477b4521425cc6038" }, { "_id": "6a74b1f477b4521425cc6048" },
-  { "_id": "6a74b826d3880b84f2050f0c" },
+const MONGODB_URI = process.env.MONGO_URL;
+
+const AUTHOR_ID = "6a74b826d3880b84f2050f0c";
+
+// 39 ids parsed from the pasted array. The original JSON was truncated
+// (trailing comma, no closing bracket) — this is everything that was
+// actually complete. Re-run with the full list if there were more.
+const RECIPE_IDS = [
+  "6a74c44fb68d0aacbfe98117",
+  "6a74c44fb68d0aacbfe9814e",
+  "6a74c450b68d0aacbfe98161",
+  "6a74c450b68d0aacbfe98171",
+  "6a74c450b68d0aacbfe98176",
+  "6a74c450b68d0aacbfe98195",
+  "6a74c450b68d0aacbfe981a3",
+  "6a74c450b68d0aacbfe981a9",
+  "6a74c450b68d0aacbfe981bc",
+  "6a74c450b68d0aacbfe981cb",
+  "6a74c450b68d0aacbfe981d9",
+  "6a74c44fb68d0aacbfe9811a",
+  "6a74c44fb68d0aacbfe9811c",
+  "6a74c44fb68d0aacbfe9812e",
+  "6a74c44fb68d0aacbfe98136",
+  "6a74c44fb68d0aacbfe98139",
+  "6a74c44fb68d0aacbfe9813e",
+  "6a74c44fb68d0aacbfe9813f",
+  "6a74c44fb68d0aacbfe98152",
+  "6a74c450b68d0aacbfe98154",
+  "6a74c450b68d0aacbfe9816a",
+  "6a74c450b68d0aacbfe9816b",
+  "6a74c450b68d0aacbfe98172",
+  "6a74c450b68d0aacbfe98173",
+  "6a74c450b68d0aacbfe9817e",
+  "6a74c450b68d0aacbfe9819b",
+  "6a74c450b68d0aacbfe981af",
+  "6a74c450b68d0aacbfe981c9",
+  "6a74c450b68d0aacbfe981d5",
+  "6a74c44fb68d0aacbfe9811f",
+  "6a74c44fb68d0aacbfe98127",
+  "6a74c44fb68d0aacbfe98140",
+  "6a74c44fb68d0aacbfe98143",
+  "6a74c44fb68d0aacbfe9814c",
+  "6a74c450b68d0aacbfe98160",
+  "6a74c450b68d0aacbfe98162",
+  "6a74c450b68d0aacbfe98165",
+  "6a74c450b68d0aacbfe98166",
+  "6a74c450b68d0aacbfe98167",
 ];
 
-// Varied bodies so 51 comments don't read as one bot repeating itself.
-const COMMENT_BODIES = [
-  "Made this last night, turned out great!",
-  "Tried it with a bit less salt and it was perfect for us.",
-  "This is now in my regular rotation, thanks for sharing.",
-  "Added extra garlic and it worked really well.",
-  "Simple and reliable, exactly what I was looking for.",
-  "Followed it exactly, no notes, will make again.",
-  "Swapped in what I had on hand and it still came out well.",
-  "Family loved this one, definitely making it again.",
-  "Good base recipe, easy to tweak to taste.",
-  "Solid recipe, saved it to my cookbook.",
-];
+// recipeCount values must sum to <= RECIPE_IDS.length; ids are sliced
+// sequentially and NOT reused across cookbooks.
+const COOKBOOKS = [
+  {
+    title: "Weeknight Dinners",
+    description: "Fast, low-effort meals for busy weekdays.",
+    coverImageURL: "https://picsum.photos/seed/weeknight-dinners/800/600",
+    coverImageFileId: "seed-weeknight-dinners",
+    recipeCount: 15,
+  },
+  {
+    title: "Weekend Baking",
+    description: "Breads, cakes, and slow bakes worth the extra time.",
+    coverImageURL: "https://picsum.photos/seed/weekend-baking/800/600",
+    coverImageFileId: "seed-weekend-baking",
+    recipeCount: 12,
+  },
+  {
+    title: "Meal Prep Staples",
+    description: "Batch-cookable recipes that hold up in the fridge.",
+    coverImageURL: "https://picsum.photos/seed/meal-prep-staples/800/600",
+    coverImageFileId: "seed-meal-prep-staples",
+    recipeCount: 12,
+  },
+] as const;
 
-async function main() {
-  const uri = process.env.MONGO_URL;
-  if (!uri) throw new Error("MONGO_URL is not set");
-
-  if (!isValidObjectId(RECIPE_ID)) {
-    throw new Error(`Invalid recipe id: ${RECIPE_ID}`);
+async function seed() {
+  if (!MONGODB_URI) {
+    throw new Error("MONGODB_URI is not set");
   }
-  const recipeObjectId = new mongoose.Types.ObjectId(RECIPE_ID);
+  if (!mongoose.isValidObjectId(AUTHOR_ID)) {
+    throw new Error(`AUTHOR_ID is not a valid ObjectId: ${AUTHOR_ID}`);
+  }
 
-  const validUserIds = USERS.map((u) => u._id).filter((id) => {
-    const valid = isValidObjectId(id);
-    if (!valid) console.warn(`Skipping invalid user id: ${id}`);
-    return valid;
-  });
-  if (validUserIds.length === 0) throw new Error("No valid user ids to seed");
+  const invalidIds = RECIPE_IDS.filter((id) => !mongoose.isValidObjectId(id));
+  if (invalidIds.length > 0) {
+    throw new Error(`Invalid recipe ObjectId(s): ${invalidIds.join(", ")}`);
+  }
 
-  await mongoose.connect(uri);
+  const totalNeeded = COOKBOOKS.reduce((sum, cb) => sum + cb.recipeCount, 0);
+  if (totalNeeded > RECIPE_IDS.length) {
+    throw new Error(
+      `Cookbooks need ${totalNeeded} recipes but only ${RECIPE_IDS.length} ids were provided.`
+    );
+  }
 
-  // bulkWrite + upsert on (recipe, author) is what makes reruns safe: an
-  // existing pair is matched and left untouched ($setOnInsert only fires
-  // on insert), so you never get 2x/3x comments from running this twice.
-  // ordered: false lets each op resolve independently instead of the whole
-  // batch aborting on the first failure.
-  const operations: AnyBulkWriteOperation<CommentDocument>[] = validUserIds.map(
-    (userId, i) => ({
-      updateOne: {
-        filter: {
-          recipe: recipeObjectId,
-          author: new mongoose.Types.ObjectId(userId),
+  await mongoose.connect(MONGODB_URI);
+
+  try {
+    const authorId = new mongoose.Types.ObjectId(AUTHOR_ID);
+    const titles = COOKBOOKS.map((cb) => cb.title);
+
+    // Idempotent: clear any prior run of this exact seed for this user
+    // before inserting, instead of appending duplicates on every run.
+    const { deletedCount } = await Cookbook.deleteMany({
+      author: authorId,
+      title: { $in: titles },
+    });
+    if (deletedCount) {
+      console.log(`Removed ${deletedCount} previously seeded cookbook(s).`);
+    }
+
+    let cursor = 0;
+    const docs = COOKBOOKS.map((cb) => {
+      const recipeIds = RECIPE_IDS.slice(cursor, cursor + cb.recipeCount).map(
+        (id) => new mongoose.Types.ObjectId(id)
+      );
+      cursor += cb.recipeCount;
+
+      return {
+        author: authorId,
+        title: cb.title,
+        description: cb.description,
+        recipes: recipeIds,
+        coverImage: {
+          coverImageURL: cb.coverImageURL,
+          coverImageFileId: cb.coverImageFileId,
         },
-        update: {
-          $setOnInsert: {
-            recipe: recipeObjectId,
-            author: new mongoose.Types.ObjectId(userId),
-            body: COMMENT_BODIES[i % COMMENT_BODIES.length],
-          },
-        },
-        upsert: true,
-      },
-    })
-  );
+      };
+    });
 
-  const result = await Comment.bulkWrite(operations, { ordered: false });
-
-  console.log(
-    `Seed complete — inserted: ${result.upsertedCount}, already existed: ${
-      validUserIds.length - result.upsertedCount
-    }`
-  );
+    const inserted = await Cookbook.insertMany(docs);
+    inserted.forEach((doc) =>
+      console.log(`Created "${doc.title}" (${doc.recipes.length} recipes) — ${doc._id}`)
+    );
+  } finally {
+    await mongoose.disconnect();
+  }
 }
 
-main()
+seed()
+  .then(() => process.exit(0))
   .catch((err) => {
     console.error("Seed failed:", err);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await mongoose.disconnect();
+    process.exit(1);
   });

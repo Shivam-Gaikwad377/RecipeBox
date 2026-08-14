@@ -7,26 +7,26 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { isValidObjectId } from "mongoose";
 import { RecipeDocument } from "@/models/recipe.model";
 import z from "zod";
-export async function GET(req: NextRequest, { params }: { params: { id: string; cookBookId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string; cookbookId: string } }) {
     try {
         const session = await getServerSession(authOptions);
         const userId = session?.user?._id;
         await connectToDatabase();
 
-        const { id, cookBookId } = await params;
-        if (!isValidObjectId(id) || !isValidObjectId(cookBookId)) {
-            return NextResponse.json<ApiResponse>(
-                { success: false, message: "Invalid user ID or cookbook ID" },
-                { status: 400 }
-            );
-        }
+        const { id, cookbookId } = (await params);
+        // if (!isValidObjectId(id) || !isValidObjectId(cookbookId)) {
+        //     return NextResponse.json<ApiResponse>(
+        //         { success: false, message: "Invalid user ID or cookbook ID" },
+        //         { status: 400 }
+        //     );
+        // }
         if (userId?.toString() !== id) {
             return NextResponse.json<ApiResponse>(
                 { success: false, message: "Unauthorized" },
                 { status: 401 }
             );
         }
-        const cookBook = await Cookbook.findOne({ _id: cookBookId, author: userId }).populate<{ recipes: RecipeDocument[] }>("recipes").exec();
+        const cookBook = await Cookbook.findOne({ _id: cookbookId, author: userId }).populate<{ recipes: RecipeDocument[] }>("recipes").exec();
         if (!cookBook) {
             return NextResponse.json<ApiResponse>(
                 { success: false, message: "Cookbook not found or you are not the author" },

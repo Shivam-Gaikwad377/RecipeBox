@@ -1,3 +1,4 @@
+"use client"
 import { useState, useEffect, Dispatch } from "react";
 import axios from "axios";
 import ApiResponse from "@/types/ApiResponse";

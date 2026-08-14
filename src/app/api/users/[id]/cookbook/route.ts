@@ -84,7 +84,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     try {
         await connectToDatabase();
-        const user = await User.findById(params.id);
+        const userId = (await params).id;
+        const user = await User.findById(userId);
         if (!user) {
             return NextResponse.json<ApiResponse>(
                 { success: false, message: "User not found" },
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             );
         }
 
-        const cookbooks = await Cookbook.find({ author: params.id }).populate("recipes");
+        const cookbooks = await Cookbook.find({ author: userId }).populate("recipes");
         return NextResponse.json<ApiResponse>(
             { success: true, message: "Cookbooks fetched successfully", data: cookbooks },
             { status: 200 }
