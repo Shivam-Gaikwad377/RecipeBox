@@ -62,7 +62,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { cookBookId
         };
 
         try {
-            await cookBook.save();
+            await cookBook.save({ validateModifiedOnly: true });
         } catch (saveError) {
             // save failed — the NEW upload is now orphaned, not the old one. Clean it up.
             await imagekitClient.deleteFile(result.fileId).catch(() => { });

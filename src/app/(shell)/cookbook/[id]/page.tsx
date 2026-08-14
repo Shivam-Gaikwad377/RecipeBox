@@ -1,5 +1,5 @@
 "use client"
-import React from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import AddCookbook from '@/components/shell/cookbook/AddCookbook'
 import { usePathname } from 'next/navigation';
 import useFetch from '@/hooks/useFetch';
@@ -8,13 +8,16 @@ import { CookbookDocument } from '@/models/cookbook.model';
 import { RecipeDocument } from '@/models/recipe.model';
 import RecipeSection from '@/components/shell/profile/RecipeSection';
 import { useSession } from "next-auth/react";
-import {useForm} from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import SecondaryButton from '@/components/SecondaryButton';
 import PrimaryButton from '@/components/PrimaryButton';
 import axios from "axios";
 import { useRouter } from 'next/navigation';
 import { updateCookbookSchema, UpdateCookbookSchema } from '@/schemas/updateCookbook.schema';
+import ApiResponse from '@/types/ApiResponse';
+import { toast } from 'sonner';
+import { getErrorMessage } from '@/helpers/getErrorMessage';
 const page = () => {
   const pathname = usePathname();
   const router = useRouter();
@@ -23,13 +26,25 @@ const page = () => {
   const [cookbook, setCookbooks] = useState<CookbookDocument | null>(null);
   const { loading, error } = useFetch<CookbookDocument | null>(`/api/users/${session?.user?._id}/cookbook/${id}`, {}, setCookbooks);
   const [isEditing, setIsEditing] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<UpdateCookbookSchema>({
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const MAX_COVER_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+  const ACCEPTED_COVER_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<UpdateCookbookSchema>({
     resolver: zodResolver(updateCookbookSchema),
     defaultValues: {
       title: cookbook?.title || "",
-      description: cookbook?.description || "",     
+      description: cookbook?.description || "",
     },
   });
+
+  useEffect(() => {
+    reset({
+      title: cookbook?.title || "",
+      description: cookbook?.description || "",
+    });
+  }
+    , [cookbook, reset]);
 
   const onSubmit = async (data: UpdateCookbookSchema) => {
     try {
@@ -40,8 +55,46 @@ const page = () => {
       }
     } catch (error) {
       console.error("Error updating cookbook:", error);
+    }finally {
+      setIsEditing(false);
     }
   };
+
+  const handleImageChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!ACCEPTED_COVER_IMAGE_TYPES.includes(file.type)) {
+        toast.error("Please upload a JPEG, PNG, or WebP image.");
+        e.target.value = "";
+        return;
+      }
+      if (file.size > MAX_COVER_IMAGE_BYTES) {
+        toast.error("Image must be smaller than 5MB.");
+        e.target.value = "";
+        return;
+      }
+
+      setIsUploadingCover(true);
+      try {
+        const formData = new FormData();
+        formData.append("coverImage", file);
+
+        const response = await axios.patch<ApiResponse>(`/api/users/${session?.user?._id}/cookbook/upload-cover/${id}`, formData);
+        setCookbooks(response.data.data);
+        router.refresh(); // Refresh the page to reflect the updated data
+        toast.success("Cover image updated successfully!");
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Error updating cover image."));
+      } finally {
+        setIsUploadingCover(false);
+        e.target.value = "";
+        setIsEditing(false);
+      }
+    },
+    []
+  );
 
   return (
 
@@ -77,6 +130,27 @@ const page = () => {
                 className="w-full h-full object-cover"
                 src={cookbook?.coverImage?.coverImageURL || "/images/cookbook-cover-placeholder.jpg"}
               />
+              {isEditing && (<><button
+                type="button"
+                aria-label="Change cover image"
+                disabled={isUploadingCover}
+                className="absolute top-0 left-0 bg-surface-container-lowest m-2 border border-outline-variant rounded-full p-2 shadow-sm text-primary hover:bg-surface-container hover-lift flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <span
+                  className="material-symbols-outlined text-[20px]"
+
+                >
+                  {isUploadingCover ? "hourglass_top" : "edit"}
+                </span>
+              </button>
+                <input
+                  className="hidden"
+                  type="file"
+                  accept={ACCEPTED_COVER_IMAGE_TYPES.join(",")}
+                  onChange={handleImageChange}
+                  ref={fileInputRef}
+                /></>)}
             </div>
             <div
               className="flex flex-col md:flex-row md:justify-between md:items-start gap-4"
@@ -87,7 +161,7 @@ const page = () => {
                     <input
                       type="text"
                       className="form-input-text   text-on-surface mb-2 bg-transparent border-none focus:outline-none"
-                      defaultValue={cookbook?.title }
+                      defaultValue={cookbook?.title}
                       {...register("title")}
                       placeholder="Enter cookbook title"
                     />
@@ -121,16 +195,17 @@ const page = () => {
                   </div>
                   {isEditing && (
                     <div className="flex items-center justify-center gap-md">
-                      <SecondaryButton type="button"  onClick={() => setIsEditing(false)} label="Cancel" fontSize="medium"/>
-                       
+                      <SecondaryButton type="button" onClick={() => setIsEditing(false)} label="Cancel" fontSize="medium" />
+
                       <PrimaryButton type="submit" label="Save" fontSize="medium" />
-                        
+
                     </div>
-                    )}
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <button
+                  type="button"
                   aria-label="Edit cookbook"
                   className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors duration-200"
                 >
@@ -139,6 +214,7 @@ const page = () => {
                   </span>
                 </button>
                 <button
+                  type="button"
                   aria-label="Delete cookbook"
                   className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors duration-200"
                 >
