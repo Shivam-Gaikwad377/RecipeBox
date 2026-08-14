@@ -6,6 +6,7 @@ import EmptyState from "@/components/shell/profile/EmptyState";
 import GridSkeleton from "@/components/shell/skeletons/GridSkeleton";
 import RecipeCard from "@/components/shell/recipes/RecipeCard";
 import { RecipeDocument } from "@/models/recipe.model";
+import mongoose from "mongoose";
 
 const AddRecipeTile = () => (
   <Link
@@ -23,12 +24,11 @@ const RecipeSection = ({
   loading,
   isOwnProfile,
 }: {
-  recipes: RecipeDocument[] | undefined;
+  recipes: RecipeDocument[] | mongoose.Types.ObjectId[] | undefined;
   loading: boolean;
   isOwnProfile: boolean;
 }) => {
   if (loading) return <GridSkeleton />;
-
   if (!Array.isArray(recipes) || recipes.length === 0) {
     return (
       <EmptyState
@@ -45,7 +45,7 @@ const RecipeSection = ({
 
   return (
     <div className="flex flex-wrap w-full gap-md">
-      {recipes.map((recipe) => (
+      {(recipes as RecipeDocument[]).map((recipe : RecipeDocument) => (
           <RecipeCard
           key={recipe?._id?.toString()}
           id={recipe?._id?.toString()}

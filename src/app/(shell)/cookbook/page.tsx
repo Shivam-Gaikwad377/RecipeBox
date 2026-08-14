@@ -4,6 +4,9 @@ import { usePathname } from 'next/navigation';
 import useFetch from '@/hooks/useFetch';
 import { useState } from 'react'
 import { CookbookDocument } from '@/models/cookbook.model';
+import { RecipeDocument } from '@/models/recipe.model';
+import RecipeSection from '@/components/shell/profile/RecipeSection';
+
 const page = () => {
   const pathname = usePathname();
   const id = pathname.split("/").pop();
@@ -81,7 +84,7 @@ const page = () => {
         <hr className="border-outline-variant/30 mb-lg" />
 
         <section>
-          
+          <RecipeSection recipes={cookbook?.recipes || [] as RecipeDocument[] } isOwnProfile={true} loading={loading} />
         </section>
       </main>
     </body>
