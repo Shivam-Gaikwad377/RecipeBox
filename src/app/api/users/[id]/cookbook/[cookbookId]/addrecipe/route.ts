@@ -17,6 +17,7 @@ export async function PATCH(
     { params }: { params: { id: string; cookbookId: string } }
 ) {
     const session = await getServerSession(authOptions);
+    const { id, cookbookId } = await params;
     if (!session?.user?._id) {
         return NextResponse.json<ApiResponse>(
             { success: false, message: "Unauthorized" },
@@ -24,13 +25,13 @@ export async function PATCH(
             { status: 401 }
         );
     }
-    if (session.user._id !== params.id) {
+    if (session.user._id !== id) {
         return NextResponse.json<ApiResponse>(
             { success: false, message: "Forbidden" },
             { status: 403 }
         );
     }
-    if (!isValidObjectId(params.cookbookId)) {
+    if (!isValidObjectId(cookbookId)) {
         return NextResponse.json<ApiResponse>(
             { success: false, message: "Invalid cookbook id" },
             { status: 400 }
@@ -49,7 +50,7 @@ export async function PATCH(
     await connectToDatabase();
 
     const cookbook = await Cookbook.findOneAndUpdate(
-        { _id: params.cookbookId, user: session.user._id },
+        { _id: cookbookId, author: session.user._id },
         { $addToSet: { recipes: recipeId } },
         { new: true }
     ).lean();

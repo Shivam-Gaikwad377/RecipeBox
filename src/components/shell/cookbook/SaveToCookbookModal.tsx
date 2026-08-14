@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
 import axios from "axios";
+import ApiResponse from "@/types/ApiResponse";
 type Cookbook = {
   _id: string;
-  name: string;
+  title: string;
   recipes: string[];
 };
 
@@ -48,10 +49,10 @@ const SaveToCookbookModal = ({ recipeId, onClose }: SaveToCookbookModalProps) =>
     (async () => {
       try {
         setLoading(true);
-        const res = await axios.get<Cookbook[]>(`/api/users/${session.user._id}/cookbook`, {
+        const res = await axios.get<ApiResponse>(`/api/users/${session.user._id}/cookbook`, {
           signal: controller.signal,
         });
-        setCookbooks(res.data);
+        setCookbooks(res.data.data?.cookbooks);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           setError("Couldn't load your cookbooks. Try again.");
@@ -118,19 +119,20 @@ const SaveToCookbookModal = ({ recipeId, onClose }: SaveToCookbookModalProps) =>
         )}
 
         <ul className="flex flex-col gap-xs">
-          {cookbooks.map((cb) => {
+          {cookbooks?.map((cb) => {
             const isSaved = cb.recipes.includes(recipeId);
             const isSaving = savingId === cb._id;
 
             return (
               <li key={cb._id}>
+                
                 <button
                   type="button"
                   disabled={isSaved || isSaving}
                   onClick={() => handleSave(cb._id)}
                   className="w-full flex items-center justify-between px-sm py-2 rounded-lg hover:bg-surface-container disabled:opacity-60"
                 >
-                  <span className="text-sm text-on-surface">{cb.name}</span>
+                  <span className="text-sm text-on-surface">{cb.title}</span>
                   <span
                     className={`material-symbols-outlined text-lg ${isSaving ? "animate-spin" : ""}`}
                     aria-hidden="true"

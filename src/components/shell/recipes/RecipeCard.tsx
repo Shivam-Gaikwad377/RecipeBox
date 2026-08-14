@@ -39,7 +39,10 @@ const RecipeCard = ({
         <article className="flex flex-col grow">
           <button
             type="button"
-            onClick={() => setIsSaveModalOpen(true)}
+            onClick={(e) => {
+              e.preventDefault();
+              setIsSaveModalOpen(true);
+            }}
             aria-label="Save recipe to cookbook"
             className="absolute top-sm left-sm z-10 bg-black/60 flex items-center justify-center backdrop-blur-sm text-white p-1.5 rounded-lg hover:bg-black/80 transition-colors"
           >

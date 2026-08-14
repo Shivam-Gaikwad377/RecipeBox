@@ -1,3 +1,4 @@
+import "@/models/recipe.model";
 import { NextRequest, NextResponse } from "next/server";
 import ApiResponse from "@/types/ApiResponse";
 import { connectToDatabase } from "@/lib/dbConfig";
@@ -6,6 +7,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { isValidObjectId } from "mongoose";
 import { RecipeDocument } from "@/models/recipe.model";
+import { Recipe } from "@/models/recipe.model";
 import z from "zod";
 import { updateCookbookSchema } from "@/schemas/updateCookbook.schema";
 export async function GET(req: NextRequest, { params }: { params: { id: string; cookbookId: string } }) {
