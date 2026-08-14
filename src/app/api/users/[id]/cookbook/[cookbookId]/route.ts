@@ -7,6 +7,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { isValidObjectId } from "mongoose";
 import { RecipeDocument } from "@/models/recipe.model";
 import z from "zod";
+import { updateCookbookSchema } from "@/schemas/updateCookbook.schema";
 export async function GET(req: NextRequest, { params }: { params: { id: string; cookbookId: string } }) {
     try {
         const session = await getServerSession(authOptions);
@@ -14,12 +15,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string; 
         await connectToDatabase();
 
         const { id, cookbookId } = (await params);
-        // if (!isValidObjectId(id) || !isValidObjectId(cookbookId)) {
-        //     return NextResponse.json<ApiResponse>(
-        //         { success: false, message: "Invalid user ID or cookbook ID" },
-        //         { status: 400 }
-        //     );
-        // }
+        if (!isValidObjectId(id) || !isValidObjectId(cookbookId)) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid user ID or cookbook ID" },
+                { status: 400 }
+            );
+        }
         if (userId?.toString() !== id) {
             return NextResponse.json<ApiResponse>(
                 { success: false, message: "Unauthorized" },
@@ -49,61 +50,104 @@ export async function GET(req: NextRequest, { params }: { params: { id: string; 
 
 }
 
-const bodySchema = z.object({
-    recipeId: z.string().refine(isValidObjectId, "Invalid recipe id"),
-});
+export async function DELETE(req: NextRequest, { params }: { params: { id: string; cookbookId: string } }) {
+    try {
+        const session = await getServerSession(authOptions);
+        const userId = session?.user?._id;
+        await connectToDatabase();
+        const { id, cookbookId } = (await params);
+        if (!isValidObjectId(id) || !isValidObjectId(cookbookId)) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid user ID or cookbook ID" },
+                { status: 400 }
+            );
+        }
 
-export async function PATCH(
-    req: NextRequest,
-    { params }: { params: { id: string; cookbookId: string } }
-) {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?._id) {
+        if (userId?.toString() !== id) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        const deletedCookbook = await Cookbook.findOneAndDelete({ _id: cookbookId, author: userId }).exec();
+
+        if (!deletedCookbook) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Cookbook not found or you are not the author" },
+                { status: 404 }
+            );
+        }
+
         return NextResponse.json<ApiResponse>(
-            { success: false, message: "Unauthorized" },
-
-            { status: 401 }
-        );
-    }
-    if (session.user._id !== params.id) {
-        return NextResponse.json<ApiResponse>(
-            { success: false, message: "Forbidden" },
-            { status: 403 }
-        );
-    }
-    if (!isValidObjectId(params.cookbookId)) {
-        return NextResponse.json<ApiResponse>(
-            { success: false, message: "Invalid cookbook id" },
-            { status: 400 }
-        );
-    }
-
-    const parsed = bodySchema.safeParse(await req.json());
-    if (!parsed.success) {
-        return NextResponse.json<ApiResponse>(
-            { success: false, message: "Invalid request body" },
-            { status: 400 }
-        );
-    }
-    const { recipeId } = parsed.data;
-
-    await connectToDatabase();
-
-    const cookbook = await Cookbook.findOneAndUpdate(
-        { _id: params.cookbookId, user: session.user._id },
-        { $addToSet: { recipes: recipeId } },
-        { new: true }
-    ).lean();
-
-    if (!cookbook) {
-        return NextResponse.json<ApiResponse>(
-            { success: false, message: "Cookbook not found" },
-            { status: 404 }
+            { success: true, message: "Cookbook deleted successfully", data: deletedCookbook },
+            { status: 200 }
         );
     }
 
-    return NextResponse.json<ApiResponse>(
-        { success: true, message: "Recipe added to cookbook", data: cookbook },
-        { status: 200 }
-    );
+    catch (error) {
+        console.error("Error deleting cookbook:", error);
+        return NextResponse.json<ApiResponse>(
+            { success: false, message: "Failed to delete cookbook" },
+            { status: 500 }
+        );
+    }
+
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: { id: string; cookbookId: string } }) {
+    try {
+        const session = await getServerSession(authOptions);
+        const userId = session?.user?._id;
+        await connectToDatabase();
+        const { id, cookbookId } = (await params);
+        if (!isValidObjectId(id) || !isValidObjectId(cookbookId)) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid user ID or cookbook ID" },
+                { status: 400 }
+            );
+        }
+
+        if (userId?.toString() !== id) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        const requestBody = await req.json();
+        const parsedData = updateCookbookSchema.safeParse(requestBody);
+        if (!parsedData.success) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Invalid request data", data: parsedData.error.format() },
+                { status: 400 }
+            );
+        }
+
+        const updatedCookbook = await Cookbook.findOneAndUpdate(
+            { _id: cookbookId, author: userId },
+            { $set: parsedData.data },
+            { new: true }
+        ).exec();
+
+        if (!updatedCookbook) {
+            return NextResponse.json<ApiResponse>(
+                { success: false, message: "Cookbook not found or you are not the author" },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json<ApiResponse>(
+            { success: true, message: "Cookbook updated successfully", data: updatedCookbook },
+            { status: 200 }
+        );
+    }
+    catch (error) {
+        console.error("Error updating cookbook:", error);
+        return NextResponse.json<ApiResponse>(
+            { success: false, message: "Failed to update cookbook" },
+            { status: 500 }
+        );
+    }
+
 }

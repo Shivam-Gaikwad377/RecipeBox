@@ -69,7 +69,7 @@ const SaveToCookbookModal = ({ recipeId, onClose }: SaveToCookbookModalProps) =>
     setSavingId(cookbookId);
 
     try {
-        const res = await axios.patch(`/api/users/${session.user._id}/cookbook/${cookbookId}`, {
+        const res = await axios.patch(`/api/users/${session.user._id}/cookbook/${cookbookId}/addrecipe`, {
             recipeId,
         });
         if (res.status !== 200) {
