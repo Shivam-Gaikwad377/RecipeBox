@@ -1,5 +1,5 @@
 "use client";
-import Image from "next/image";
+
 import { useRouter } from "next/navigation";
 import React from "react";
 import { useEffect, useState, useRef } from "react";
@@ -21,7 +21,7 @@ const VerifyEmail = () => {
     const email = searchParams.get("newEmail") || ""
     const [otp, setOtp] = useState<string[]>(Array(6).fill("")); // Initialize an array of 6 empty strings
     const inputRef = useRef<(HTMLInputElement | null)[]>([]);
-    const [error, setError] = useState<string | null>(null);
+    
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
@@ -59,10 +59,17 @@ const VerifyEmail = () => {
                 email,
                 verificationToken: enteredOtp,
             });
+            if(response.data.success) {
+                toast.success("Email verified successfully! Redirecting to login...", { position: "top-right" });
+            }
             await session.update();
             router.replace("/login");
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Invalid verification code. Please try again.");
+        } catch (err: unknown) {
+            toast.error(
+                (err as { response?: { data?: { message?: string } } }).response?.data?.message ||
+                    "Invalid verification code. Please try again.",
+                { position: "top-right" }
+            );
         } finally {
             setLoading(false);
         }
@@ -102,7 +109,7 @@ const VerifyEmail = () => {
     const handleResend = async () => {
         if (resendLoading) return; // guard against double-fire
         setResendLoading(true);
-        setError(null);
+       
         try {
             const response = await axios.post("/api/auth/resend-verification-code", {
                 email: session.data?.user?.email,
@@ -111,11 +118,12 @@ const VerifyEmail = () => {
                 setTimer(RESEND_COOLDOWN_SECONDS);
                 toast.success("Verification code resent successfully.");
             } else {
-                setError(response.data.message || "Failed to resend verification code. Please try again.");
+                toast.error(response.data.message || "Failed to resend verification code. Please try again.", { position: "top-right" });
             }
-        } catch (err: any) {
-            setError(
-                err.response?.data?.message || "Failed to resend verification code. Please try again."
+        } catch (err: unknown) {
+            toast.error(
+                (err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to resend verification code. Please try again.",
+                { position: "top-right" }
             );
         } finally {
             setResendLoading(false);

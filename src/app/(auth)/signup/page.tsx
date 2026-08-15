@@ -7,7 +7,7 @@ import { signUpSchema } from "@/schemas/signup.schema";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { SignUpSchemaInput, SignUpSchemaOutput } from "@/schemas/signup.schema";
+import { SignUpSchemaInput } from "@/schemas/signup.schema";
 import ApiResponse from '@/types/ApiResponse';
 import { EyeOff, Eye } from "lucide-react"
 import { toast } from "sonner";
@@ -29,7 +29,11 @@ const Page = () => {
         let response;
         try {
             response = await axios.post<ApiResponse>("/api/auth/signup", data);
-
+            if(response.data.success) {
+                toast.success("Account created successfully! Please check your email for verification.", { position: "top-right" });
+                // Redirect to email verification page
+                
+            }
         } catch (error) {
 
             console.error("Error creating user:", error);
@@ -50,7 +54,7 @@ const Page = () => {
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-on-background/60 to-transparent flex flex-col justify-end p-margin-desktop z-10">
                         <blockquote className="font-headline-md text-headline-md text-on-primary mb-sm">
-                            "Join the community of home cooks."
+                            &quot;Join the community of home cooks.&quot;
                         </blockquote>
                         <p className="font-body-md text-body-md text-surface-container-low">
                             Discover, share, and perfect your favorite recipes with passionate foodies worldwide.

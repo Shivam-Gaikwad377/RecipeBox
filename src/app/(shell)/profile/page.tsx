@@ -200,7 +200,7 @@ const ProfilePage = () => {
         e.target.value = "";
       }
     },
-    []
+    [session?.data?.user?._id]
   );
 
   const onSubmit = async (data: UpdateProfileOutput) => {

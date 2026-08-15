@@ -1,6 +1,6 @@
 "use client"
 import React, { useCallback, useEffect, useRef } from 'react'
-import AddCookbook from '@/components/shell/cookbook/AddCookbook'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation';
 import useFetch from '@/hooks/useFetch';
 import { useState } from 'react'
@@ -18,7 +18,7 @@ import { updateCookbookSchema, UpdateCookbookSchema } from '@/schemas/updateCook
 import ApiResponse from '@/types/ApiResponse';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/helpers/getErrorMessage';
-const page = () => {
+const Page = () => {
   const pathname = usePathname();
   const router = useRouter();
   const id = pathname.split("/").pop();
@@ -93,7 +93,7 @@ const page = () => {
         setIsEditing(false);
       }
     },
-    []
+    [id,session?.user?._id, router]
   );
 
   return (
@@ -125,10 +125,12 @@ const page = () => {
             <div
               className="w-full h-50 md:h-75 rounded-xl overflow-hidden mb-6 relative shadow-sm"
             >
-              <img
+              <Image
                 alt="Fresh ingredients on a wooden kitchen counter"
                 className="w-full h-full object-cover"
                 src={cookbook?.coverImage?.coverImageURL || "/images/cookbook-cover-placeholder.jpg"}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                fill
               />
               {isEditing && (<><button
                 type="button"
@@ -234,4 +236,4 @@ const page = () => {
   )
 }
 
-export default page
+export default Page

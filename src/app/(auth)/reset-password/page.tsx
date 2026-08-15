@@ -66,9 +66,9 @@ const ResetPassword = () => {
             );
             toast.success(response.data.message || "Password reset successfully");
             router.replace("/login");
-        } catch (err: any) {
+        } catch (err: unknown) {
             toast.error(
-                err.response?.data?.message ||
+                (err as { response?: { data?: { message?: string } } }).response?.data?.message ||
                 "Invalid verification code. Please try again."
             );
         } finally {
@@ -102,9 +102,9 @@ const ResetPassword = () => {
                     "Verification code resent successfully. Please check your email."
                 );
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             toast.error(
-                err.response?.data?.message ||
+                (err as { response?: { data?: { message?: string } } }).response?.data?.message ||
                 "Failed to resend verification code. Please try again."
             );
 
@@ -272,6 +272,7 @@ const ResetPassword = () => {
                         <button
                             className="w-full mt-sm bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm hover:scale-[1.02] transition-transform shadow-sm flex items-center justify-center"
                             type="submit"
+                            disabled={isSubmitting || !newPassword || !confirmPassword || newPassword !== confirmPassword}
                         >
                             Reset Password
                         </button>

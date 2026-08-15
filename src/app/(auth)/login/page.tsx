@@ -4,20 +4,20 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { Form, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import Image from "next/image";
+
+
 import { loginSchema, LoginSchemaInput, LoginSchemaOutput } from "@/schemas/login.schema";
-import Gradient from "../../../../public/Gradient.png";
+
 import { toast } from "sonner";
-import { Link } from "react-email";
+
 import { Eye, EyeOff } from "lucide-react";
 
 export default function SignIn() {
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
-    const [error, setError] = useState<string | null>(null);
+
 
     const form = useForm<LoginSchemaInput>({
         resolver: zodResolver(loginSchema),
@@ -42,7 +42,6 @@ export default function SignIn() {
             });
             if (result?.error) {
                 toast.error(result.error, { position: "top-right" });
-                setError(result.error);
             } else if (result?.ok) {
                 toast.success("Login successful! Redirecting to dashboard...", {
                     position: "top-right",
@@ -51,9 +50,14 @@ export default function SignIn() {
             }
         } catch (error: unknown) {
             if (error instanceof Error) {
-                setError("Invalid email or password" + error.message);
+                toast.error(error.message, { position: "top-right" });
+
+
             } else {
-                setError("An unknown error occurred");
+                toast.error("An unexpected error occurred. Please try again.", {
+                    position: "top-right",
+                });
+
             }
         }
     };

@@ -88,8 +88,8 @@ export default function PasswordResetEmail({
               © {new Date().getFullYear()} RecipeBox · All rights reserved.
             </Text>
             <Text style={footer}>
-              You're receiving this because you requested a password reset.
-              If this wasn't you,{" "}
+              You&apos;re receiving this because you requested a password reset.
+              If this wasn&apos;t you,{" "}
               <Link href="mailto:support@recipebox.app" style={anchor}>
                 contact support
               </Link>

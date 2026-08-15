@@ -2,15 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import React from "react";
-import Image from "next/image";
+
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import ApiResponse from "@/types/ApiResponse";
-import Gradient from "../../../../public/Gradient.png";
+
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { set } from "mongoose";
+
 const VerifyForm = () => {
 
     const [timer, setTimer] = useState(60); // 60 seconds (1 minute)
@@ -59,10 +59,16 @@ const VerifyForm = () => {
 
             toast.success("Email verified successfully! Redirecting to login...");
             router.replace("/login");
-        } catch (err: any) {
-            const message = err.response?.data?.message || "Invalid verification code. Please try again.";
+        } catch (err) {
+            if(err instanceof Error) {
+                setLoading(false);
+                toast.error(err.message || "Invalid verification code. Please try again.");
+                return;
+            }
+            
+            console.error("Unexpected error:", err);
             setLoading(false);
-            toast.error(message);
+            toast.error("An unexpected error occurred. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -172,7 +178,7 @@ const VerifyForm = () => {
                         </button>
                     </form>
                     <div className="mt-sm font-label-sm text-label-sm text-on-surface-variant">
-                        Didn't receive the code?
+                        Didn&rsquo;t receive the code?
                         <button
                             disabled={loading || !canResend}
                             onClick={handleResend}

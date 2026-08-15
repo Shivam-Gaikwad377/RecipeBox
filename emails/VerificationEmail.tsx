@@ -58,7 +58,7 @@ export default function VerificationEmail({
                 </Heading>
                 <Text className="text-[#333] text-[14px] leading-6 mt-6 mb-3.5 mx-0">
                   Thanks for starting the new RecipeBox account creation
-                  process. We want to make sure it's really you. Please enter
+                  process. We want to make sure it&apos;s really you. Please enter
                   the following verification code when prompted. If you
                   don&apos;t want to create an account, you can ignore this
                   message.
@@ -88,8 +88,8 @@ export default function VerificationEmail({
               © {new Date().getFullYear()} RecipeBox · All rights reserved.
             </Text>
             <Text style={footer}>
-              You're receiving this because you created a RecipeBox account.
-              If this wasn't you,{" "}
+              You&apos;re receiving this because you created a RecipeBox account.
+              If this wasn&apos;t you,{" "}
               <Link href="mailto:support@recipebox.app" style={anchor}>
                 contact support
               </Link>
