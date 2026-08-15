@@ -8,7 +8,7 @@ import { authOptions } from "../auth/[...nextauth]/options";
 import ApiResponse from "@/types/ApiResponse";
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?._id) {
         return NextResponse.json<ApiResponse>({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const item = await PlannerItem.create({
-            user: session.user.id, // never trust a client-supplied user id
+            user: session.user._id, // never trust a client-supplied user id
             recipe: recipeId,
             date,
             mealSlot,
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
     await connectToDatabase();
 
     const items = await PlannerItem.find({
-        user: session.user.id,
+        user: session.user._id,
         date: { $gte: toDayStart(startDate), $lte: toDayStart(endDate) },
     })
         .populate("recipe", "title coverImage prepTime cookTime") // adjust field names to your Recipe schema
