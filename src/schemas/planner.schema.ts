@@ -1,7 +1,10 @@
-import { z } from "zod";
-import { isValidObjectId } from "mongoose";
+ // fails the build immediately, with a clear message, if this ever leaks into client code again
 
-const objectId = z.string().refine(isValidObjectId, { message: "Invalid ObjectId" });
+import { z } from "zod";
+
+
+const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId");
+
 
 export const mealSlotEnum = z.enum(["Breakfast", "Lunch", "Dinner"]);
 

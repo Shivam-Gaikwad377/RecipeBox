@@ -6,7 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { createPlannerItemSchema, mealSlotEnum } from "@/schemas/planner.schema";
-
+import axios from "axios";
+import ApiResponse from "@/types/ApiResponse";
 type FormValues = z.output<typeof createPlannerItemSchema>;
 type FormInput = z.input<typeof createPlannerItemSchema>;
 type MealSlot = z.infer<typeof mealSlotEnum>;
@@ -20,6 +21,7 @@ interface RecipeSearchResult {
 interface CreatePlannerItemModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void; 
   initialDate?: Date;
   initialMealSlot?: MealSlot;
 }
@@ -29,6 +31,7 @@ export function CreatePlannerItemModal({
   onClose,
   initialDate,
   initialMealSlot,
+  onSuccess,
 }: CreatePlannerItemModalProps) {
   const router = useRouter();
 
@@ -110,24 +113,25 @@ export function CreatePlannerItemModal({
   async function onSubmit(values: FormInput) {
     setSubmitError(null);
     try {
-      const res = await fetch("/api/planner", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+      const res = await axios.post<ApiResponse>("/api/planner", values, {
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
       if (res.status === 409) {
-        const data = await res.json();
-        setSubmitError(data.error ?? "That slot is already planned.");
+        
+        setSubmitError(res.data?.message ?? "That slot is already planned.");
         return;
       }
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        setSubmitError(data?.error ?? "Something went wrong.");
+      if (!res.data?.success) {
+        
+        setSubmitError(res.data?.message ?? "Something went wrong.");
         return;
       }
 
       onClose();
+      onSuccess?.();
       router.refresh();
     } catch {
       setSubmitError("Network error — try again.");
@@ -138,7 +142,7 @@ export function CreatePlannerItemModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <div className="w-full max-w-[60% ]  rounded-lg bg-white p-6 shadow-lg">
         <h2 className="mb-4 text-lg font-semibold">Add to Meal Plan</h2>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -213,3 +217,5 @@ export function CreatePlannerItemModal({
     </div>
   );
 }
+
+export default CreatePlannerItemModal;

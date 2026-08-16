@@ -24,18 +24,20 @@ import useFetch from "@/hooks/useFetch";
 import RecipeSection from "@/components/shell/profile/RecipeSection";
 import { CookbookDocument } from "@/models/cookbook.model";
 import CookbookSection from "@/components/shell/cookbook/CookbookSection";
+import PlannerSection from "@/components/shell/profile/PlannerSection";
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const DEFAULT_AVATAR = "/default-avatar.png";
 const USERNAME_CHECK_DEBOUNCE_MS = 500;
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "error";
-type ProfileTab = "recipes" | "cookbooks" | "about";
+type ProfileTab = "recipes" | "cookbooks" | "about" | "planner";
 
 const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
   { id: "recipes", label: "Recipes" },
   { id: "cookbooks", label: "Cookbooks" },
   { id: "about", label: "About" },
+  { id: "planner", label: "Meal Planner" },
 ];
 
 // Minimal shape this page needs from a Recipe. Rename/trim fields to match
@@ -63,7 +65,7 @@ const ProfilePage = () => {
   const [userData, setUserData] = useState<UserDocument | null>(null);
   const [followerCount, setFollowerCount] = useState<{ count: number } | null>({ count: 0 });
   const [followingCount, setFollowingCount] = useState<{ count: number } | null>({ count: 0 });
-  const [recipes, setRecipes] = useState<{total: number, recipes: RecipeDocument[]} | null>(null);
+  const [recipes, setRecipes] = useState<{ total: number, recipes: RecipeDocument[] } | null>(null);
   const [cookbooks, setCookbooks] = useState<{ total: number; cookbooks: CookbookDocument[] } | null>(null);
 
   const { loading: userDataLoading, error: userDataError } = useFetch<UserDocument>(
@@ -71,14 +73,6 @@ const ProfilePage = () => {
     {},
     setUserData
   );
-
-  // This page fetches by session.data.user.username, so it only ever loads
-  // the logged-in user's own data — it's a self-view/settings page, not a
-  // param-driven public profile. isOwnProfile is hardcoded true to match
-  // that reality. If you add a /profile/[username] route for viewing OTHER
-  // users, that page needs its own data fetch keyed off the route param,
-  // and isOwnProfile there should be
-  // `session.data?.user?.username === routeUsername`.
   const isOwnProfile = true;
   const userId = userData?._id?.toString();
 
@@ -235,7 +229,7 @@ const ProfilePage = () => {
 
   const isSaveDisabled =
     isSubmitting || usernameStatus === "checking" || usernameStatus === "taken";
-    
+
   return (
     <>
       <section className="col-span-4 md:col-span-12 flex flex-col md:flex-row items-center md:items-start gap-lg mb-xl mt-lg">
@@ -295,7 +289,7 @@ const ProfilePage = () => {
           <div className="flex items-center gap-lg mb-md">
             <div className="flex flex-col items-center md:items-start">
               <span className="text-label-md text-on-surface">
-                {/* {recipesLoading ? "—" : recipes.length} */}
+                {recipesLoading ? "—" : recipes?.total}
               </span>
               <span className="font-label-sm text-label-sm text-on-surface-variant">
                 Recipes
@@ -303,7 +297,7 @@ const ProfilePage = () => {
             </div>
             <div className="flex flex-col items-center md:items-start">
               <span className="text-label-md text-on-surface">
-                {/* {cookbooksLoading ? "—" : cookbooks.length} */}
+                {cookbooksLoading ? "—" : cookbooks?.total}
               </span>
               <span className="font-label-sm text-label-sm text-on-surface-variant">
                 Cookbooks
@@ -372,6 +366,7 @@ const ProfilePage = () => {
             isOwnProfile={isOwnProfile}
           />
         )}
+        
 
         {activeTab === "about" && (
           <div className="">
